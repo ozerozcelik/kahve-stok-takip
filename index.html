@@ -248,11 +248,19 @@
                 showNotification('✓ Tedarikçi eklendi', 'success');
             };
 
-            const updateProduct = (id, field, value) => {
-                const newProducts = products.map(p => 
-                    p.id === id ? { ...p, [field]: field === 'supplier' || field === 'orderStatus' ? value : (parseFloat(value) || 0) } : p
-                );
-                saveProducts(newProducts);
+            const updateProduct = async (id, field, value) => {
+                const newProducts = products.map(p => {
+                    if (p.id === id) {
+                        if (field === 'supplier' || field === 'orderStatus') {
+                            return { ...p, [field]: value };
+                        } else {
+                            const numValue = value === '' ? 0 : parseFloat(value);
+                            return { ...p, [field]: isNaN(numValue) ? 0 : numValue };
+                        }
+                    }
+                    return p;
+                });
+                await saveProducts(newProducts);
             };
 
             const saveEditedProduct = () => {
@@ -1105,16 +1113,28 @@
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
-                                                        value={product.orderQty}
+                                                        value={product.orderQty || ''}
                                                         onChange={(e) => {
-                                                            updateProduct(product.id, 'orderQty', e.target.value);
-                                                            if (parseFloat(e.target.value) > 0) {
+                                                            const val = e.target.value;
+                                                            updateProduct(product.id, 'orderQty', val);
+                                                            if (parseFloat(val) > 0) {
                                                                 updateProduct(product.id, 'orderStatus', '');
+                                                            }
+                                                        }}
+                                                        onFocus={(e) => {
+                                                            if (e.target.value === '0') {
+                                                                e.target.value = '';
+                                                            }
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            if (e.target.value === '') {
+                                                                updateProduct(product.id, 'orderQty', 0);
                                                             }
                                                         }}
                                                         className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300 focus:border-orange-500 focus:outline-none"
                                                         min="0"
                                                         step="0.1"
+                                                        placeholder="0"
                                                     />
                                                     <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
                                                 </div>
