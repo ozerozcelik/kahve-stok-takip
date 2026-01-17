@@ -249,31 +249,27 @@
             };
 
             const updateProduct = (id, field, value) => {
-                const newProducts = products.map(p => {
-                    if (p.id === id) {
-                        if (field === 'supplier' || field === 'orderStatus') {
+                setProducts(prevProducts => {
+                    const newProducts = prevProducts.map(p => {
+                        if (p.id === id) {
                             return { ...p, [field]: value };
-                        } else {
-                            const numValue = value === '' ? '' : value;
-                            return { ...p, [field]: numValue };
                         }
+                        return p;
+                    });
+                    
+                    // Storage'a kaydet
+                    if (typeof window.storage !== 'undefined') {
+                        setTimeout(() => {
+                            try {
+                                window.storage.set('coffee-products', JSON.stringify(newProducts));
+                            } catch (error) {
+                                console.error('Kaydetme hatası:', error);
+                            }
+                        }, 100);
                     }
-                    return p;
+                    
+                    return newProducts;
                 });
-                setProducts(newProducts);
-                
-                // Storage'a kaydet
-                if (typeof window.storage !== 'undefined') {
-                    try {
-                        window.storage.set('coffee-products', JSON.stringify(newProducts.map(p => ({
-                            ...p,
-                            current: p.current === '' ? 0 : parseFloat(p.current) || 0,
-                            orderQty: p.orderQty === '' ? 0 : parseFloat(p.orderQty) || 0
-                        }))));
-                    } catch (error) {
-                        console.error('Kaydetme hatası:', error);
-                    }
-                }
             };
 
             const saveEditedProduct = () => {
@@ -1110,12 +1106,15 @@
                                                     <input
                                                         type="number"
                                                         value={product.current}
-                                                        onChange={(e) => updateProduct(product.id, 'current', e.target.value)}
+                                                        onChange={(e) => {
+                                                            const newValue = parseFloat(e.target.value) || 0;
+                                                            updateProduct(product.id, 'current', newValue);
+                                                        }}
                                                         className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg focus:outline-none ${
                                                             isLowStock ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-300 focus:border-amber-500'
                                                         }`}
                                                         min="0"
-                                                        step="0.1"
+                                                        step="1"
                                                     />
                                                     <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
                                                 </div>
@@ -1126,18 +1125,14 @@
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
-                                                        value={product.orderQty === 0 ? '' : product.orderQty}
+                                                        value={product.orderQty}
                                                         onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            updateProduct(product.id, 'orderQty', val === '' ? 0 : val);
-                                                            if (parseFloat(val) > 0) {
-                                                                updateProduct(product.id, 'orderStatus', '');
-                                                            }
+                                                            const newValue = parseFloat(e.target.value) || 0;
+                                                            updateProduct(product.id, 'orderQty', newValue);
                                                         }}
                                                         className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300 focus:border-orange-500 focus:outline-none"
                                                         min="0"
-                                                        step="0.1"
-                                                        placeholder="0"
+                                                        step="1"
                                                     />
                                                     <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
                                                 </div>
