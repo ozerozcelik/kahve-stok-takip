@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         input[type="number"]::-webkit-inner-spin-button,
@@ -28,6 +29,12 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // ⚙️ SUPABASE AYARLARI - BURAYA KENDİ BİLGİLERİNİZİ YAPIN
+        const SUPABASE_URL = 'https://fkbsfnomyotbmhcquiyp.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_xYb8cHMZ_XWaTVlqSxzPIA_wwPWnNI3';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         // Icons
         const Plus = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
         const ShoppingCart = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>;
@@ -42,33 +49,12 @@
         const Truck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h15v13H1z"></path><path d="M16 8h4l3 3v5h-7V8z"></path><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
         const Loader = () => <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>;
         const Clock = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+        const RefreshCw = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>;
 
         const CoffeeInventory = () => {
-            const defaultCategories = [
-                { id: 1, name: 'Kahve & Çekirdek', icon: '☕' },
-                { id: 2, name: 'Süt & Krema', icon: '🥛' },
-                { id: 3, name: 'Şeker & Tatlandırıcı', icon: '🍬' },
-                { id: 4, name: 'Bardak & Kapak', icon: '🥤' },
-                { id: 5, name: 'Sos & Şurup', icon: '🍯' },
-                { id: 6, name: 'Diğer Malzemeler', icon: '📦' },
-            ];
-
-            const defaultProducts = [
-                { id: 1, categoryId: 1, name: 'Espresso Çekirdeği', unit: 'kg', current: 5, orderQty: 0, minStock: 3, supplier: 'Kahve Dünyası', orderStatus: '' },
-                { id: 2, categoryId: 1, name: 'Filter Kahve Çekirdeği', unit: 'kg', current: 3, orderQty: 0, minStock: 2, supplier: 'Kahve Dünyası', orderStatus: '' },
-                { id: 3, categoryId: 2, name: 'Tam Yağlı Süt', unit: 'litre', current: 15, orderQty: 0, minStock: 10, supplier: 'Pınar', orderStatus: '' },
-                { id: 4, categoryId: 2, name: 'Laktoz Free Süt', unit: 'litre', current: 5, orderQty: 0, minStock: 5, supplier: 'Pınar', orderStatus: '' },
-                { id: 5, categoryId: 3, name: 'Şeker Paketi', unit: 'adet', current: 200, orderQty: 0, minStock: 100, supplier: 'Türk Şeker', orderStatus: '' },
-                { id: 6, categoryId: 3, name: 'Stevia', unit: 'adet', current: 50, orderQty: 0, minStock: 30, supplier: 'Metro', orderStatus: '' },
-                { id: 7, categoryId: 4, name: 'Küçük Bardak', unit: 'adet', current: 150, orderQty: 0, minStock: 100, supplier: 'Kağıt Pazarı', orderStatus: '' },
-                { id: 8, categoryId: 4, name: 'Büyük Bardak', unit: 'adet', current: 120, orderQty: 0, minStock: 80, supplier: 'Kağıt Pazarı', orderStatus: '' },
-                { id: 9, categoryId: 4, name: 'Kapak', unit: 'adet', current: 180, orderQty: 0, minStock: 120, supplier: 'Kağıt Pazarı', orderStatus: '' },
-                { id: 10, categoryId: 5, name: 'Çikolata Sosu', unit: 'şişe', current: 2, orderQty: 0, minStock: 2, supplier: 'Metro', orderStatus: '' },
-            ];
-
-            const [categories, setCategories] = useState(defaultCategories);
-            const [products, setProducts] = useState(defaultProducts);
-            const [suppliers, setSuppliers] = useState(['Kahve Dünyası', 'Pınar', 'Türk Şeker', 'Metro', 'Kağıt Pazarı']);
+            const [categories, setCategories] = useState([]);
+            const [products, setProducts] = useState([]);
+            const [suppliers, setSuppliers] = useState([]);
             const [orderHistory, setOrderHistory] = useState([]);
             const [selectedCategory, setSelectedCategory] = useState(null);
             const [searchQuery, setSearchQuery] = useState('');
@@ -88,105 +74,71 @@
             const [isLoading, setIsLoading] = useState(true);
 
             useEffect(() => {
-                loadData();
+                loadAllData();
             }, []);
 
-            const loadData = async () => {
+            const loadAllData = async () => {
                 setIsLoading(true);
-                
                 try {
-                    // Storage kullanılabilir mi kontrol et
-                    if (typeof window.storage !== 'undefined') {
-                        // Kategorileri yükle
-                        try {
-                            const savedCategories = await window.storage.get('coffee-categories');
-                            if (savedCategories && savedCategories.value) {
-                                setCategories(JSON.parse(savedCategories.value));
-                            }
-                        } catch (error) {
-                            console.log('Kategoriler ilk kez yükleniyor');
-                        }
-
-                        // Ürünleri yükle
-                        try {
-                            const savedProducts = await window.storage.get('coffee-products');
-                            if (savedProducts && savedProducts.value) {
-                                setProducts(JSON.parse(savedProducts.value));
-                            }
-                        } catch (error) {
-                            console.log('Ürünler ilk kez yükleniyor');
-                        }
-
-                        // Tedarikçileri yükle
-                        try {
-                            const savedSuppliers = await window.storage.get('coffee-suppliers');
-                            if (savedSuppliers && savedSuppliers.value) {
-                                setSuppliers(JSON.parse(savedSuppliers.value));
-                            }
-                        } catch (error) {
-                            console.log('Tedarikçiler ilk kez yükleniyor');
-                        }
-
-                        // Sipariş geçmişini yükle
-                        try {
-                            const savedHistory = await window.storage.get('coffee-order-history');
-                            if (savedHistory && savedHistory.value) {
-                                setOrderHistory(JSON.parse(savedHistory.value));
-                            }
-                        } catch (error) {
-                            console.log('Geçmiş ilk kez yükleniyor');
-                        }
-                    } else {
-                        console.log('Storage API kullanılamıyor, varsayılan veriler yüklendi');
-                    }
+                    await Promise.all([
+                        loadCategories(),
+                        loadProducts(),
+                        loadSuppliers(),
+                        loadOrderHistory()
+                    ]);
                 } catch (error) {
                     console.error('Veri yükleme hatası:', error);
+                    showNotification('❌ Veri yüklenemedi', 'error');
                 }
-                
-                setTimeout(() => setIsLoading(false), 500);
+                setIsLoading(false);
             };
 
-            const saveCategories = async (newCategories) => {
-                setCategories(newCategories);
-                if (typeof window.storage !== 'undefined') {
-                    try {
-                        await window.storage.set('coffee-categories', JSON.stringify(newCategories));
-                    } catch (error) {
-                        console.error('Kategori kaydetme hatası:', error);
-                    }
-                }
-            };
-
-            const saveProducts = (newProducts) => {
-                setProducts(newProducts);
-                if (typeof window.storage !== 'undefined') {
-                    try {
-                        window.storage.set('coffee-products', JSON.stringify(newProducts));
-                    } catch (error) {
-                        console.error('Ürün kaydetme hatası:', error);
-                    }
+            const loadCategories = async () => {
+                const { data, error } = await supabase
+                    .from('categories')
+                    .select('*')
+                    .order('id');
+                if (error) {
+                    console.error('Kategori yükleme hatası:', error);
+                } else {
+                    setCategories(data || []);
                 }
             };
 
-            const saveSuppliers = async (newSuppliers) => {
-                setSuppliers(newSuppliers);
-                if (typeof window.storage !== 'undefined') {
-                    try {
-                        await window.storage.set('coffee-suppliers', JSON.stringify(newSuppliers));
-                    } catch (error) {
-                        console.error('Tedarikçi kaydetme hatası:', error);
-                    }
+            const loadProducts = async () => {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*')
+                    .order('id');
+                if (error) {
+                    console.error('Ürün yükleme hatası:', error);
+                } else {
+                    setProducts(data || []);
                 }
             };
 
-            const saveOrderHistory = async (newHistory) => {
-                setOrderHistory(newHistory);
-                if (typeof window.storage !== 'undefined') {
-                    try {
-                        await window.storage.set('coffee-order-history', JSON.stringify(newHistory));
-                    } catch (error) {
-                        console.error('Geçmiş kaydetme hatası:', error);
-                    }
+            const loadSuppliers = async () => {
+                const { data, error } = await supabase
+                    .from('suppliers')
+                    .select('*')
+                    .order('name');
+                if (error) {
+                    console.error('Tedarikçi yükleme hatası:', error);
+                } else {
+                    setSuppliers(data?.map(s => s.name) || []);
+                }
+            };
+
+            const loadOrderHistory = async () => {
+                const { data, error } = await supabase
+                    .from('order_history')
+                    .select('*')
+                    .order('date', { ascending: false })
+                    .limit(50);
+                if (error) {
+                    console.error('Geçmiş yükleme hatası:', error);
+                } else {
+                    setOrderHistory(data || []);
                 }
             };
 
@@ -199,19 +151,27 @@
                 setTimeout(() => notification.remove(), 3000);
             };
 
-            const addCategory = () => {
+            const addCategory = async () => {
                 if (!newCategory.name.trim()) {
                     showNotification('❌ Kategori adı girin', 'error');
                     return;
                 }
-                const newCat = { id: Date.now(), ...newCategory };
-                saveCategories([...categories, newCat]);
-                setNewCategory({ name: '', icon: '📦' });
-                setShowAddCategory(false);
-                showNotification('✓ Kategori eklendi', 'success');
+                const { error } = await supabase
+                    .from('categories')
+                    .insert([{ name: newCategory.name, icon: newCategory.icon }]);
+                
+                if (error) {
+                    showNotification('❌ Kategori eklenemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadCategories();
+                    setNewCategory({ name: '', icon: '📦' });
+                    setShowAddCategory(false);
+                    showNotification('✓ Kategori eklendi', 'success');
+                }
             };
 
-            const addProduct = () => {
+            const addProduct = async () => {
                 if (!newProduct.name.trim()) {
                     showNotification('❌ Ürün adı giriniz', 'error');
                     return;
@@ -220,113 +180,175 @@
                     showNotification('❌ Lütfen bir kategori seçin', 'error');
                     return;
                 }
-                const newProd = { 
-                    id: Date.now(), 
-                    categoryId: selectedCategory, 
-                    ...newProduct,
-                    minStock: parseFloat(newProduct.minStock) || 0,
-                    orderStatus: ''
-                };
-                saveProducts([...products, newProd]);
-                setNewProduct({ name: '', unit: 'adet', current: 0, orderQty: 0, minStock: 0, supplier: '', orderStatus: '' });
-                setShowAddProduct(false);
-                showNotification('✓ Ürün başarıyla eklendi', 'success');
+                
+                const { error } = await supabase
+                    .from('products')
+                    .insert([{
+                        category_id: selectedCategory,
+                        name: newProduct.name,
+                        unit: newProduct.unit,
+                        current: parseFloat(newProduct.current) || 0,
+                        order_qty: 0,
+                        min_stock: parseFloat(newProduct.minStock) || 0,
+                        supplier: newProduct.supplier,
+                        order_status: ''
+                    }]);
+                
+                if (error) {
+                    showNotification('❌ Ürün eklenemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadProducts();
+                    setNewProduct({ name: '', unit: 'adet', current: 0, orderQty: 0, minStock: 0, supplier: '', orderStatus: '' });
+                    setShowAddProduct(false);
+                    showNotification('✓ Ürün başarıyla eklendi', 'success');
+                }
             };
 
-            const addSupplier = () => {
+            const addSupplier = async () => {
                 if (!newSupplier.trim()) {
                     showNotification('❌ Tedarikçi adı girin', 'error');
                     return;
                 }
-                if (suppliers.includes(newSupplier.trim())) {
-                    showNotification('❌ Bu tedarikçi zaten mevcut', 'error');
-                    return;
-                }
-                saveSuppliers([...suppliers, newSupplier.trim()]);
-                setNewSupplier('');
-                setShowAddSupplier(false);
-                showNotification('✓ Tedarikçi eklendi', 'success');
-            };
-
-            const updateProduct = (id, field, value) => {
-                setProducts(prevProducts => {
-                    const newProducts = prevProducts.map(p => {
-                        if (p.id === id) {
-                            return { ...p, [field]: value };
-                        }
-                        return p;
-                    });
-                    
-                    // Storage'a kaydet
-                    if (typeof window.storage !== 'undefined') {
-                        setTimeout(() => {
-                            try {
-                                window.storage.set('coffee-products', JSON.stringify(newProducts));
-                            } catch (error) {
-                                console.error('Kaydetme hatası:', error);
-                            }
-                        }, 100);
+                
+                const { error } = await supabase
+                    .from('suppliers')
+                    .insert([{ name: newSupplier.trim() }]);
+                
+                if (error) {
+                    if (error.code === '23505') {
+                        showNotification('❌ Bu tedarikçi zaten mevcut', 'error');
+                    } else {
+                        showNotification('❌ Tedarikçi eklenemedi', 'error');
+                        console.error(error);
                     }
-                    
-                    return newProducts;
-                });
+                } else {
+                    await loadSuppliers();
+                    setNewSupplier('');
+                    setShowAddSupplier(false);
+                    showNotification('✓ Tedarikçi eklendi', 'success');
+                }
             };
 
-            const saveEditedProduct = () => {
+            const updateProduct = async (id, field, value) => {
+                const dbField = field === 'orderQty' ? 'order_qty' : 
+                               field === 'minStock' ? 'min_stock' :
+                               field === 'orderStatus' ? 'order_status' :
+                               field;
+                
+                const { error } = await supabase
+                    .from('products')
+                    .update({ [dbField]: value })
+                    .eq('id', id);
+                
+                if (error) {
+                    console.error('Güncelleme hatası:', error);
+                } else {
+                    setProducts(products.map(p => 
+                        p.id === id ? { ...p, [field]: value } : p
+                    ));
+                }
+            };
+
+            const saveEditedProduct = async () => {
                 if (!editingProduct.name.trim()) {
                     showNotification('❌ Ürün adı boş olamaz', 'error');
                     return;
                 }
-                const newProducts = products.map(p => 
-                    p.id === editingProduct.id ? editingProduct : p
-                );
-                saveProducts(newProducts);
-                setEditingProduct(null);
-                showNotification('✓ Ürün güncellendi', 'success');
+                
+                const { error } = await supabase
+                    .from('products')
+                    .update({
+                        category_id: editingProduct.category_id || editingProduct.categoryId,
+                        name: editingProduct.name,
+                        unit: editingProduct.unit,
+                        min_stock: parseFloat(editingProduct.min_stock || editingProduct.minStock) || 0,
+                        supplier: editingProduct.supplier
+                    })
+                    .eq('id', editingProduct.id);
+                
+                if (error) {
+                    showNotification('❌ Ürün güncellenemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadProducts();
+                    setEditingProduct(null);
+                    showNotification('✓ Ürün güncellendi', 'success');
+                }
             };
 
-            const deleteProduct = (id) => {
-                if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
-                    saveProducts(products.filter(p => p.id !== id));
+            const deleteProduct = async (id) => {
+                if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+                
+                const { error } = await supabase
+                    .from('products')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    showNotification('❌ Ürün silinemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadProducts();
                     showNotification('✓ Ürün silindi', 'success');
                 }
             };
 
-            const deleteCategory = (id) => {
-                const categoryProducts = products.filter(p => p.categoryId === id);
+            const deleteCategory = async (id) => {
+                const categoryProducts = products.filter(p => p.category_id === id);
                 if (categoryProducts.length > 0) {
                     showNotification('❌ Bu kategoride ürünler var. Önce ürünleri silin.', 'error');
                     return;
                 }
-                if (confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) {
-                    saveCategories(categories.filter(c => c.id !== id));
+                if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return;
+                
+                const { error } = await supabase
+                    .from('categories')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    showNotification('❌ Kategori silinemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadCategories();
                     if (selectedCategory === id) setSelectedCategory(null);
                     showNotification('✓ Kategori silindi', 'success');
                 }
             };
 
-            const deleteSupplier = (supplierName) => {
+            const deleteSupplier = async (supplierName) => {
                 const productsWithSupplier = products.filter(p => p.supplier === supplierName);
                 if (productsWithSupplier.length > 0) {
                     showNotification(`❌ Bu tedarikçiye bağlı ${productsWithSupplier.length} ürün var.`, 'error');
                     return;
                 }
-                if (confirm(`"${supplierName}" tedarikçisini silmek istediğinize emin misiniz?`)) {
-                    saveSuppliers(suppliers.filter(s => s !== supplierName));
+                if (!confirm(`"${supplierName}" tedarikçisini silmek istediğinize emin misiniz?`)) return;
+                
+                const { error } = await supabase
+                    .from('suppliers')
+                    .delete()
+                    .eq('name', supplierName);
+                
+                if (error) {
+                    showNotification('❌ Tedarikçi silinemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadSuppliers();
                     showNotification('✓ Tedarikçi silindi', 'success');
                 }
             };
 
             const getTotalOrderItems = () => {
-                return products.filter(p => p.orderQty > 0).length;
+                return products.filter(p => p.order_qty > 0).length;
             };
 
             const getLowStockProducts = () => {
-                return products.filter(p => p.current <= p.minStock);
+                return products.filter(p => p.current <= p.min_stock);
             };
 
             const confirmAndExportOrder = () => {
-                const orderItems = products.filter(p => p.orderQty > 0);
+                const orderItems = products.filter(p => p.order_qty > 0);
                 if (orderItems.length === 0) {
                     showNotification('❌ Sipariş listesi boş', 'error');
                     return;
@@ -334,8 +356,8 @@
                 setShowOrderConfirm(true);
             };
 
-            const exportOrderList = () => {
-                const orderItems = products.filter(p => p.orderQty > 0);
+            const exportOrderList = async () => {
+                const orderItems = products.filter(p => p.order_qty > 0);
                 
                 const excelData = [
                     ['SİPARİŞ LİSTESİ'],
@@ -345,16 +367,8 @@
                     [],
                     ['Kategori', 'Ürün', 'Tedarikçi', 'Birim', 'Mevcut Stok', 'Sipariş Miktarı', 'Notlar'],
                     ...orderItems.map(p => {
-                        const cat = categories.find(c => c.id === p.categoryId);
-                        return [
-                            cat?.name || '', 
-                            p.name, 
-                            p.supplier || '-',
-                            p.unit, 
-                            p.current, 
-                            p.orderQty,
-                            ''
-                        ];
+                        const cat = categories.find(c => c.id === p.category_id);
+                        return [cat?.name || '', p.name, p.supplier || '-', p.unit, p.current, p.order_qty, ''];
                     }),
                     [],
                     ['TOPLAM KALEM:', orderItems.length],
@@ -370,27 +384,32 @@
                 XLSX.utils.book_append_sheet(wb, ws, 'Sipariş Listesi');
                 XLSX.writeFile(wb, `Siparis_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.xlsx`);
                 
-                // Siparişleri "Sipariş Verildi" olarak işaretle
-                const updatedProducts = products.map(p => 
-                    p.orderQty > 0 ? { ...p, orderStatus: 'ordered' } : p
-                );
-                saveProducts(updatedProducts);
+                // Siparişleri "ordered" olarak işaretle
+                for (const product of orderItems) {
+                    await supabase
+                        .from('products')
+                        .update({ order_status: 'ordered' })
+                        .eq('id', product.id);
+                }
 
                 // Sipariş geçmişine kaydet
-                const newHistoryEntry = {
-                    id: Date.now(),
-                    date: new Date().toISOString(),
-                    user: userName,
-                    items: orderItems.map(p => ({
-                        name: p.name,
-                        category: categories.find(c => c.id === p.categoryId)?.name,
-                        supplier: p.supplier,
-                        quantity: p.orderQty,
-                        unit: p.unit
-                    }))
-                };
-                saveOrderHistory([newHistoryEntry, ...orderHistory].slice(0, 50));
+                const { error } = await supabase
+                    .from('order_history')
+                    .insert([{
+                        user_name: userName,
+                        items: orderItems.map(p => ({
+                            name: p.name,
+                            category: categories.find(c => c.id === p.category_id)?.name,
+                            supplier: p.supplier,
+                            quantity: p.order_qty,
+                            unit: p.unit
+                        }))
+                    }]);
                 
+                if (error) console.error('Geçmiş kaydetme hatası:', error);
+                
+                await loadProducts();
+                await loadOrderHistory();
                 setShowOrderConfirm(false);
                 showNotification('✓ Sipariş listesi indirildi', 'success');
             };
@@ -402,11 +421,9 @@
                     [],
                     ['Kategori', 'Ürün', 'Tedarikçi', 'Birim', 'Mevcut Stok', 'Min. Stok', 'Durum'],
                     ...products.map(p => {
-                        const cat = categories.find(c => c.id === p.categoryId);
-                        const status = p.current <= p.minStock ? 'DÜŞÜK' : 'İYİ';
-                        return [
-                            cat?.name || '', p.name, p.supplier || '-', p.unit, p.current, p.minStock, status
-                        ];
+                        const cat = categories.find(c => c.id === p.category_id);
+                        const status = p.current <= p.min_stock ? 'DÜŞÜK' : 'İYİ';
+                        return [cat?.name || '', p.name, p.supplier || '-', p.unit, p.current, p.min_stock, status];
                     }),
                 ];
 
@@ -420,10 +437,19 @@
                 showNotification('✓ Tüm ürünler indirildi', 'success');
             };
 
-            const clearAllOrders = () => {
-                if (confirm('Tüm sipariş miktarlarını sıfırlamak istediğinize emin misiniz?')) {
-                    const newProducts = products.map(p => ({ ...p, orderQty: 0, orderStatus: '' }));
-                    saveProducts(newProducts);
+            const clearAllOrders = async () => {
+                if (!confirm('Tüm sipariş miktarlarını sıfırlamak istediğinize emin misiniz?')) return;
+                
+                const { error } = await supabase
+                    .from('products')
+                    .update({ order_qty: 0, order_status: '' })
+                    .gt('order_qty', 0);
+                
+                if (error) {
+                    showNotification('❌ Siparişler temizlenemedi', 'error');
+                    console.error(error);
+                } else {
+                    await loadProducts();
                     showNotification('✓ Sipariş listesi temizlendi', 'success');
                 }
             };
@@ -434,7 +460,7 @@
                         <div className="text-center">
                             <div className="text-6xl mb-6">☕</div>
                             <Loader />
-                            <p className="text-white text-xl font-semibold mt-6">Yükleniyor...</p>
+                            <p className="text-white text-xl font-semibold mt-6">Veriler yükleniyor...</p>
                         </div>
                     </div>
                 );
@@ -479,7 +505,7 @@
             }
 
             const filteredProducts = products.filter(p => {
-                const matchesCategory = selectedCategory ? p.categoryId === selectedCategory : true;
+                const matchesCategory = selectedCategory ? p.category_id === selectedCategory : true;
                 const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                                      (p.supplier && p.supplier.toLowerCase().includes(searchQuery.toLowerCase()));
                 return matchesCategory && matchesSearch;
@@ -489,6 +515,7 @@
 
             return (
                 <div className="min-h-screen bg-gray-50 pb-24">
+                    {/* Header */}
                     <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 shadow-lg sticky top-0 z-40">
                         <div className="flex items-center justify-between">
                             <div>
@@ -496,6 +523,13 @@
                                 <p className="text-sm text-amber-100">{userName}</p>
                             </div>
                             <div className="flex gap-2">
+                                <button
+                                    onClick={loadAllData}
+                                    className="p-2 hover:bg-white/20 rounded-lg"
+                                    title="Verileri Yenile"
+                                >
+                                    <RefreshCw />
+                                </button>
                                 <button
                                     onClick={() => setShowHistory(true)}
                                     className="p-2 hover:bg-white/20 rounded-lg relative"
@@ -517,6 +551,7 @@
                         </div>
                     </div>
 
+                    {/* Düşük Stok Uyarısı */}
                     {lowStockProducts.length > 0 && (
                         <div className="bg-red-500 text-white p-4">
                             <div className="flex items-center gap-2 mb-2">
@@ -530,639 +565,8 @@
                         </div>
                     )}
 
-                    {showOrderConfirm && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-                                <div className="text-center mb-6">
-                                    <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <ShoppingCart />
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-gray-800">Sipariş Onayı</h3>
-                                    <p className="text-gray-600 mt-2">Sipariş listesini indirmek istediğinize emin misiniz?</p>
-                                </div>
-
-                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                                    <p className="text-sm text-gray-700 mb-2">
-                                        <strong>{getTotalOrderItems()} kalem</strong> sipariş verilecek
-                                    </p>
-                                    <div className="max-h-40 overflow-y-auto space-y-1">
-                                        {products.filter(p => p.orderQty > 0).map(p => (
-                                            <div key={p.id} className="text-xs flex justify-between">
-                                                <span>{p.name}</span>
-                                                <span className="font-semibold">{p.orderQty} {p.unit}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-                                    <div className="flex items-start gap-2">
-                                        <Clock />
-                                        <div className="text-sm text-blue-800">
-                                            <strong>Not:</strong> Sipariş verildikten sonra ürünler <strong>"Sipariş Verildi"</strong> olarak işaretlenecektir. Stok miktarları otomatik güncellenmeyecektir.
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setShowOrderConfirm(false)}
-                                        className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300"
-                                    >
-                                        İptal
-                                    </button>
-                                    <button
-                                        onClick={exportOrderList}
-                                        className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 flex items-center justify-center gap-2"
-                                    >
-                                        <Download size={20} />
-                                        İndir
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showMenu && (
-                        <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowMenu(false)}>
-                            <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="font-bold text-lg">Menü</h3>
-                                    <button onClick={() => setShowMenu(false)}><X /></button>
-                                </div>
-                                
-                                <div className="mb-6">
-                                    <h4 className="font-semibold mb-3 text-gray-700">📁 Kategoriler</h4>
-                                    {categories.map(cat => (
-                                        <div key={cat.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                                            <span>{cat.icon} {cat.name}</span>
-                                            <button onClick={() => deleteCategory(cat.id)} className="text-red-600 p-1">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <button
-                                        onClick={() => { setShowAddCategory(true); setShowMenu(false); }}
-                                        className="w-full mt-2 flex items-center justify-center gap-2 p-2 bg-amber-100 text-amber-700 rounded-lg"
-                                    >
-                                        <Plus size={18} />
-                                        Kategori Ekle
-                                    </button>
-                                </div>
-
-                                <div className="mb-6">
-                                    <h4 className="font-semibold mb-3 text-gray-700 flex items-center gap-2">
-                                        <Truck size={18} />
-                                        Tedarikçiler
-                                    </h4>
-                                    <div className="max-h-32 overflow-y-auto mb-2">
-                                        {suppliers.slice(0, 3).map((sup, idx) => (
-                                            <div key={idx} className="p-2 bg-gray-50 rounded mb-1 text-sm">
-                                                {sup}
-                                            </div>
-                                        ))}
-                                        {suppliers.length > 3 && (
-                                            <p className="text-xs text-gray-500 italic pl-2">+{suppliers.length - 3} tedarikçi daha...</p>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => { setShowAddSupplier(true); setShowMenu(false); }}
-                                            className="flex-1 flex items-center justify-center gap-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm"
-                                        >
-                                            <Plus size={16} />
-                                            Ekle
-                                        </button>
-                                        <button
-                                            onClick={() => { setShowManageSuppliers(true); setShowMenu(false); }}
-                                            className="flex-1 flex items-center justify-center gap-2 p-2 bg-gray-100 text-gray-700 rounded-lg text-sm"
-                                        >
-                                            <Edit2 size={16} />
-                                            Düzenle
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 border-t pt-4">
-                                    <button
-                                        onClick={() => { exportAllProducts(); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        <Download size={20} />
-                                        <span>Tüm Ürünleri İndir</span>
-                                    </button>
-                                    <button
-                                        onClick={() => { confirmAndExportOrder(); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        <ShoppingCart size={20} />
-                                        <span>Sipariş Listesini İndir</span>
-                                    </button>
-                                    <button
-                                        onClick={() => { clearAllOrders(); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg text-red-600"
-                                    >
-                                        <Trash2 size={20} />
-                                        <span>Siparişleri Temizle</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showAddCategory && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-                                <h3 className="text-xl font-bold mb-4">Yeni Kategori</h3>
-                                <input
-                                    type="text"
-                                    placeholder="Kategori adı"
-                                    value={newCategory.name}
-                                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Emoji (örn: 🍰)"
-                                    value={newCategory.icon}
-                                    onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-4"
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={addCategory} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">
-                                        Ekle
-                                    </button>
-                                    <button onClick={() => setShowAddCategory(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">
-                                        İptal
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showAddSupplier && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-                                <h3 className="text-xl font-bold mb-4">Yeni Tedarikçi</h3>
-                                <input
-                                    type="text"
-                                    placeholder="Tedarikçi adı"
-                                    value={newSupplier}
-                                    onChange={(e) => setNewSupplier(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-4"
-                                />
-                                <div className="flex gap-2">
-                                    <button onClick={addSupplier} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold">
-                                        Ekle
-                                    </button>
-                                    <button onClick={() => setShowAddSupplier(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">
-                                        İptal
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showManageSuppliers && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold">🚚 Tedarikçi Yönetimi</h3>
-                                    <button onClick={() => setShowManageSuppliers(false)}><X /></button>
-                                </div>
-                                
-                                {suppliers.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        <p>Henüz tedarikçi yok</p>
-                                        <button
-                                            onClick={() => { setShowManageSuppliers(false); setShowAddSupplier(true); }}
-                                            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold"
-                                        >
-                                            İlk Tedarikçiyi Ekle
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {suppliers.map((sup, idx) => {
-                                            const productCount = products.filter(p => p.supplier === sup).length;
-                                            return (
-                                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                    <div>
-                                                        <p className="font-semibold">{sup}</p>
-                                                        <p className="text-xs text-gray-500">{productCount} ürün</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => deleteSupplier(sup)}
-                                                        className="text-red-600 p-2 hover:bg-red-50 rounded"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                        <button
-                                            onClick={() => { setShowManageSuppliers(false); setShowAddSupplier(true); }}
-                                            className="w-full mt-4 flex items-center justify-center gap-2 p-3 bg-blue-100 text-blue-700 rounded-lg font-semibold"
-                                        >
-                                            <Plus size={18} />
-                                            Yeni Tedarikçi Ekle
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {showAddProduct && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full my-8">
-                                <h3 className="text-xl font-bold mb-4">Yeni Ürün Ekle</h3>
-                                
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Kategori Seçin *</label>
-                                <select
-                                    value={selectedCategory || ''}
-                                    onChange={(e) => setSelectedCategory(Number(e.target.value))}
-                                    className="w-full px-4 py-3 border-2 border-amber-200 rounded-lg mb-3 font-semibold"
-                                >
-                                    <option value="">Kategori seçiniz</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.icon} {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Ürün Adı *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Örn: Espresso Çekirdeği"
-                                    value={newProduct.name}
-                                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3"
-                                />
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Tedarikçi</label>
-                                <select
-                                    value={newProduct.supplier}
-                                    onChange={(e) => setNewProduct({ ...newProduct, supplier: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3"
-                                >
-                                    <option value="">Seçiniz...</option>
-                                    {suppliers.map((sup, idx) => (
-                                        <option key={idx} value={sup}>{sup}</option>
-                                    ))}
-                                </select>
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Birim *</label>
-                                <select
-                                    value={newProduct.unit}
-                                    onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3"
-                                >
-                                    <option value="adet">Adet</option>
-                                    <option value="kg">Kilogram (kg)</option>
-                                    <option value="gram">Gram (gr)</option>
-                                    <option value="litre">Litre</option>
-                                    <option value="ml">Mililitre (ml)</option>
-                                    <option value="paket">Paket</option>
-                                    <option value="şişe">Şişe</option>
-                                    <option value="kutu">Kutu</option>
-                                    <option value="koli">Koli</option>
-                                </select>
-
-                                <div className="grid grid-cols-2 gap-3 mb-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Mevcut Stok</label>
-                                        <input
-                                            type="number"
-                                            placeholder="0"
-                                            value={newProduct.current}
-                                            onChange={(e) => setNewProduct({ ...newProduct, current: e.target.value })}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Min. Stok</label>
-                                        <input
-                                            type="number"
-                                            placeholder="0"
-                                            value={newProduct.minStock}
-                                            onChange={(e) => setNewProduct({ ...newProduct, minStock: e.target.value })}
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">
-                                        Ekle
-                                    </button>
-                                    <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">
-                                        İptal
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {editingProduct && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full my-8">
-                                <h3 className="text-xl font-bold mb-4">Ürün Düzenle</h3>
-                                
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Kategori</label>
-                                <select
-                                    value={editingProduct.categoryId}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, categoryId: Number(e.target.value) })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3"
-                                >
-                                    {categories.map(cat => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.icon} {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Ürün Adı</label>
-                                <input
-                                    type="text"
-                                    value={editingProduct.name}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3"
-                                />
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Birim</label>
-                                <select
-                                    value={editingProduct.unit}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, unit: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3"
-                                >
-                                    <option value="adet">Adet</option>
-                                    <option value="kg">Kilogram (kg)</option>
-                                    <option value="gram">Gram (gr)</option>
-                                    <option value="litre">Litre</option>
-                                    <option value="ml">Mililitre (ml)</option>
-                                    <option value="paket">Paket</option>
-                                    <option value="şişe">Şişe</option>
-                                    <option value="kutu">Kutu</option>
-                                    <option value="koli">Koli</option>
-                                </select>
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Tedarikçi</label>
-                                <select
-                                    value={editingProduct.supplier || ''}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, supplier: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3"
-                                >
-                                    <option value="">Seçiniz...</option>
-                                    {suppliers.map((sup, idx) => (
-                                        <option key={idx} value={sup}>{sup}</option>
-                                    ))}
-                                </select>
-
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Minimum Stok</label>
-                                <input
-                                    type="number"
-                                    value={editingProduct.minStock}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, minStock: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 rounded-lg mb-4"
-                                />
-
-                                <div className="flex gap-2">
-                                    <button onClick={saveEditedProduct} className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold">
-                                        Kaydet
-                                    </button>
-                                    <button onClick={() => setEditingProduct(null)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">
-                                        İptal
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showHistory && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold">📋 Sipariş Geçmişi</h3>
-                                    <button onClick={() => setShowHistory(false)}><X /></button>
-                                </div>
-                                
-                                {orderHistory.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <div className="mx-auto mb-4"><History size={48} /></div>
-                                        <p>Henüz sipariş kaydı yok</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {orderHistory.map(order => (
-                                            <div key={order.id} className="bg-gray-50 rounded-lg p-4">
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div>
-                                                        <p className="font-bold text-gray-800">{order.user}</p>
-                                                        <p className="text-sm text-gray-600">
-                                                            {new Date(order.date).toLocaleDateString('tr-TR', { 
-                                                                year: 'numeric', 
-                                                                month: 'long', 
-                                                                day: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit'
-                                                            })}
-                                                        </p>
-                                                    </div>
-                                                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-semibold">
-                                                        {order.items.length} Kalem
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {order.items.slice(0, 5).map((item, idx) => (
-                                                        <div key={idx} className="text-sm text-gray-700 flex justify-between">
-                                                            <span>{item.name}</span>
-                                                            <span className="font-semibold">{item.quantity} {item.unit}</span>
-                                                        </div>
-                                                    ))}
-                                                    {order.items.length > 5 && (
-                                                        <p className="text-sm text-gray-500 italic">
-                                                            +{order.items.length - 5} ürün daha...
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="p-4">
-                        <div className="relative mb-4">
-                            <input
-                                type="text"
-                                placeholder="Ürün veya tedarikçi ara..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
-                            />
-                            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                                <Search />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="px-4 overflow-x-auto pb-2">
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setSelectedCategory(null)}
-                                className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
-                                    selectedCategory === null ? 'bg-amber-600 text-white' : 'bg-white text-gray-700'
-                                }`}
-                            >
-                                Tümü ({products.length})
-                            </button>
-                            {categories.map(cat => {
-                                const count = products.filter(p => p.categoryId === cat.id).length;
-                                return (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => setSelectedCategory(cat.id)}
-                                        className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
-                                            selectedCategory === cat.id ? 'bg-amber-600 text-white' : 'bg-white text-gray-700'
-                                        }`}
-                                    >
-                                        {cat.icon} {cat.name} ({count})
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="px-4 space-y-3 pb-4 mt-4">
-                        {filteredProducts.length === 0 ? (
-                            <div className="text-center py-12 bg-white rounded-xl">
-                                <div className="text-6xl mb-4">🔍</div>
-                                <p className="text-gray-500 font-semibold">
-                                    {searchQuery ? 'Ürün bulunamadı' : 'Bu kategoride henüz ürün yok'}
-                                </p>
-                                {!searchQuery && (
-                                    <button
-                                        onClick={() => setShowAddProduct(true)}
-                                        className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg font-semibold"
-                                    >
-                                        İlk Ürünü Ekle
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            filteredProducts.map(product => {
-                                const isLowStock = product.current <= product.minStock;
-                                const isOrdered = product.orderStatus === 'ordered';
-                                return (
-                                    <div key={product.id} className={`bg-white rounded-xl shadow-md p-4 ${isLowStock ? 'border-l-4 border-red-500' : ''}`}>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex-1">
-                                                <h3 className="font-bold text-gray-800 flex items-center gap-2 flex-wrap">
-                                                    {product.name}
-                                                    {isLowStock && (
-                                                        <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
-                                                            DÜŞÜK
-                                                        </span>
-                                                    )}
-                                                    {isOrdered && (
-                                                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                                            <Clock />
-                                                            Sipariş Verildi
-                                                        </span>
-                                                    )}
-                                                </h3>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {categories.find(c => c.id === product.categoryId)?.icon} {categories.find(c => c.id === product.categoryId)?.name || 'Kategori yok'}
-                                                    {product.supplier && ` • ${product.supplier}`}
-                                                </p>
-                                                <p className="text-xs text-gray-400 mt-1">
-                                                    Min. Stok: {product.minStock} {product.unit}
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <button 
-                                                    onClick={() => setEditingProduct(product)} 
-                                                    className="text-blue-600 p-1"
-                                                >
-                                                    <Edit2 size={18} />
-                                                </button>
-                                                <button 
-                                                    onClick={() => deleteProduct(product.id)} 
-                                                    className="text-red-600 p-1"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="text-xs text-gray-600 mb-1 block font-semibold">Mevcut Stok</label>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="number"
-                                                        value={product.current}
-                                                        onChange={(e) => {
-                                                            const newValue = parseFloat(e.target.value) || 0;
-                                                            updateProduct(product.id, 'current', newValue);
-                                                        }}
-                                                        className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg focus:outline-none ${
-                                                            isLowStock ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-300 focus:border-amber-500'
-                                                        }`}
-                                                        min="0"
-                                                        step="1"
-                                                    />
-                                                    <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div>
-                                                <label className="text-xs text-orange-600 mb-1 block font-semibold">Sipariş Ver</label>
-                                                <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="number"
-                                                        value={product.orderQty}
-                                                        onChange={(e) => {
-                                                            const newValue = parseFloat(e.target.value) || 0;
-                                                            updateProduct(product.id, 'orderQty', newValue);
-                                                        }}
-                                                        className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300 focus:border-orange-500 focus:outline-none"
-                                                        min="0"
-                                                        step="1"
-                                                    />
-                                                    <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-
-                    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
-                        {getTotalOrderItems() > 0 && (
-                            <button
-                                onClick={confirmAndExportOrder}
-                                className="bg-green-600 text-white p-4 rounded-full shadow-2xl flex items-center gap-2 hover:bg-green-700 active:bg-green-800"
-                            >
-                                <ShoppingCart />
-                                <span className="bg-white text-green-600 px-2 py-1 rounded-full text-sm font-bold">
-                                    {getTotalOrderItems()}
-                                </span>
-                            </button>
-                        )}
-                        <button
-                            onClick={() => setShowAddProduct(true)}
-                            className="bg-amber-600 text-white p-5 rounded-full shadow-2xl hover:bg-amber-700 active:bg-amber-800"
-                        >
-                            <Plus />
-                        </button>
-                    </div>
+                    {/* Sipariş Onay Modalı - Devam edecek... */}
+                    {/* Artifact çok uzun, devam kısmını bir sonraki mesajda göndereceğim */}
                 </div>
             );
         };
