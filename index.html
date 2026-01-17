@@ -40,9 +40,8 @@
         const Download = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
         const Edit2 = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>;
         const Truck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h15v13H1z"></path><path d="M16 8h4l3 3v5h-7V8z"></path><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>;
-        const Loader = () => <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>;
-        const CheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
-        const Clock = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+        const Loader = () => <svg className="spinner" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>;
+        const Clock = () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
 
         const CoffeeInventory = () => {
             const defaultCategories = [
@@ -87,7 +86,6 @@
             const [userName, setUserName] = useState('');
             const [showNamePrompt, setShowNamePrompt] = useState(true);
             const [isLoading, setIsLoading] = useState(true);
-            const [loadingMessage, setLoadingMessage] = useState('Veriler yükleniyor...');
 
             useEffect(() => {
                 loadData();
@@ -95,96 +93,110 @@
 
             const loadData = async () => {
                 setIsLoading(true);
-                setLoadingMessage('Veriler yükleniyor...');
                 
                 try {
-                    // Kategorileri yükle
-                    try {
-                        const savedCategories = await window.storage.get('coffee-categories');
-                        if (savedCategories && savedCategories.value) {
-                            setCategories(JSON.parse(savedCategories.value));
+                    // Storage kullanılabilir mi kontrol et
+                    if (typeof window.storage !== 'undefined') {
+                        // Kategorileri yükle
+                        try {
+                            const savedCategories = await window.storage.get('coffee-categories');
+                            if (savedCategories && savedCategories.value) {
+                                setCategories(JSON.parse(savedCategories.value));
+                            }
+                        } catch (error) {
+                            console.log('Kategoriler ilk kez yükleniyor');
                         }
-                    } catch (error) {
-                        console.log('Kategoriler ilk kez yükleniyor');
-                    }
 
-                    // Ürünleri yükle
-                    try {
-                        const savedProducts = await window.storage.get('coffee-products');
-                        if (savedProducts && savedProducts.value) {
-                            setProducts(JSON.parse(savedProducts.value));
+                        // Ürünleri yükle
+                        try {
+                            const savedProducts = await window.storage.get('coffee-products');
+                            if (savedProducts && savedProducts.value) {
+                                setProducts(JSON.parse(savedProducts.value));
+                            }
+                        } catch (error) {
+                            console.log('Ürünler ilk kez yükleniyor');
                         }
-                    } catch (error) {
-                        console.log('Ürünler ilk kez yükleniyor');
-                    }
 
-                    // Tedarikçileri yükle
-                    try {
-                        const savedSuppliers = await window.storage.get('coffee-suppliers');
-                        if (savedSuppliers && savedSuppliers.value) {
-                            setSuppliers(JSON.parse(savedSuppliers.value));
+                        // Tedarikçileri yükle
+                        try {
+                            const savedSuppliers = await window.storage.get('coffee-suppliers');
+                            if (savedSuppliers && savedSuppliers.value) {
+                                setSuppliers(JSON.parse(savedSuppliers.value));
+                            }
+                        } catch (error) {
+                            console.log('Tedarikçiler ilk kez yükleniyor');
                         }
-                    } catch (error) {
-                        console.log('Tedarikçiler ilk kez yükleniyor');
-                    }
 
-                    // Sipariş geçmişini yükle
-                    try {
-                        const savedHistory = await window.storage.get('coffee-order-history');
-                        if (savedHistory && savedHistory.value) {
-                            setOrderHistory(JSON.parse(savedHistory.value));
+                        // Sipariş geçmişini yükle
+                        try {
+                            const savedHistory = await window.storage.get('coffee-order-history');
+                            if (savedHistory && savedHistory.value) {
+                                setOrderHistory(JSON.parse(savedHistory.value));
+                            }
+                        } catch (error) {
+                            console.log('Geçmiş ilk kez yükleniyor');
                         }
-                    } catch (error) {
-                        console.log('Geçmiş ilk kez yükleniyor');
+                    } else {
+                        console.log('Storage API kullanılamıyor, varsayılan veriler yüklendi');
                     }
-
-                    setLoadingMessage('Hazır!');
-                    setTimeout(() => setIsLoading(false), 300);
                 } catch (error) {
                     console.error('Veri yükleme hatası:', error);
-                    showNotification('⚠️ Veriler yüklenirken bir sorun oluştu', 'error');
-                    setIsLoading(false);
                 }
+                
+                setTimeout(() => setIsLoading(false), 500);
             };
 
             const saveCategories = async (newCategories) => {
                 setCategories(newCategories);
-                try {
-                    await window.storage.set('coffee-categories', JSON.stringify(newCategories));
-                } catch (error) {
-                    console.error('Kategori kaydetme hatası:', error);
-                    showNotification('❌ Kategoriler kaydedilirken hata oluştu', 'error');
+                if (typeof window.storage !== 'undefined') {
+                    try {
+                        await window.storage.set('coffee-categories', JSON.stringify(newCategories));
+                    } catch (error) {
+                        console.error('Kategori kaydetme hatası:', error);
+                    }
                 }
             };
 
             const saveProducts = async (newProducts) => {
                 setProducts(newProducts);
-                try {
-                    await window.storage.set('coffee-products', JSON.stringify(newProducts));
-                } catch (error) {
-                    console.error('Ürün kaydetme hatası:', error);
-                    showNotification('❌ Ürünler kaydedilirken hata oluştu', 'error');
+                if (typeof window.storage !== 'undefined') {
+                    try {
+                        await window.storage.set('coffee-products', JSON.stringify(newProducts));
+                    } catch (error) {
+                        console.error('Ürün kaydetme hatası:', error);
+                    }
                 }
             };
 
             const saveSuppliers = async (newSuppliers) => {
                 setSuppliers(newSuppliers);
-                try {
-                    await window.storage.set('coffee-suppliers', JSON.stringify(newSuppliers));
-                } catch (error) {
-                    console.error('Tedarikçi kaydetme hatası:', error);
-                    showNotification('❌ Tedarikçiler kaydedilirken hata oluştu', 'error');
+                if (typeof window.storage !== 'undefined') {
+                    try {
+                        await window.storage.set('coffee-suppliers', JSON.stringify(newSuppliers));
+                    } catch (error) {
+                        console.error('Tedarikçi kaydetme hatası:', error);
+                    }
                 }
             };
 
             const saveOrderHistory = async (newHistory) => {
                 setOrderHistory(newHistory);
-                try {
-                    await window.storage.set('coffee-order-history', JSON.stringify(newHistory));
-                } catch (error) {
-                    console.error('Geçmiş kaydetme hatası:', error);
-                    showNotification('❌ Geçmiş kaydedilirken hata oluştu', 'error');
+                if (typeof window.storage !== 'undefined') {
+                    try {
+                        await window.storage.set('coffee-order-history', JSON.stringify(newHistory));
+                    } catch (error) {
+                        console.error('Geçmiş kaydetme hatası:', error);
+                    }
                 }
+            };
+
+            const showNotification = (message, type = 'success') => {
+                const notification = document.createElement('div');
+                const bgColor = type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#f59e0b';
+                notification.style.cssText = `position:fixed;top:16px;left:50%;transform:translateX(-50%);background:${bgColor};color:white;padding:12px 24px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:9999;font-weight:600;`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
             };
 
             const addCategory = () => {
@@ -279,22 +291,13 @@
             const deleteSupplier = (supplierName) => {
                 const productsWithSupplier = products.filter(p => p.supplier === supplierName);
                 if (productsWithSupplier.length > 0) {
-                    showNotification(`❌ Bu tedarikçiye bağlı ${productsWithSupplier.length} ürün var. Önce ürünlerin tedarikçisini değiştirin.`, 'error');
+                    showNotification(`❌ Bu tedarikçiye bağlı ${productsWithSupplier.length} ürün var.`, 'error');
                     return;
                 }
                 if (confirm(`"${supplierName}" tedarikçisini silmek istediğinize emin misiniz?`)) {
                     saveSuppliers(suppliers.filter(s => s !== supplierName));
                     showNotification('✓ Tedarikçi silindi', 'success');
                 }
-            };
-
-            const showNotification = (message, type = 'success') => {
-                const notification = document.createElement('div');
-                const bgColor = type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#f59e0b';
-                notification.style.cssText = `position:fixed;top:16px;left:50%;transform:translateX(-50%);background:${bgColor};color:white;padding:12px 24px;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:9999;font-weight:600;`;
-                notification.textContent = message;
-                document.body.appendChild(notification);
-                setTimeout(() => notification.remove(), 3000);
             };
 
             const getTotalOrderItems = () => {
@@ -342,13 +345,7 @@
 
                 const ws = XLSX.utils.aoa_to_sheet(excelData);
                 ws['!cols'] = [
-                    { wch: 25 },
-                    { wch: 30 },
-                    { wch: 20 },
-                    { wch: 10 },
-                    { wch: 15 },
-                    { wch: 18 },
-                    { wch: 30 },
+                    { wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 15 }, { wch: 18 }, { wch: 30 },
                 ];
                 ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
 
@@ -378,7 +375,7 @@
                 saveOrderHistory([newHistoryEntry, ...orderHistory].slice(0, 50));
                 
                 setShowOrderConfirm(false);
-                showNotification('✓ Sipariş listesi indirildi ve işaretlendi', 'success');
+                showNotification('✓ Sipariş listesi indirildi', 'success');
             };
 
             const exportAllProducts = () => {
@@ -391,13 +388,7 @@
                         const cat = categories.find(c => c.id === p.categoryId);
                         const status = p.current <= p.minStock ? 'DÜŞÜK' : 'İYİ';
                         return [
-                            cat?.name || '', 
-                            p.name, 
-                            p.supplier || '-',
-                            p.unit, 
-                            p.current, 
-                            p.minStock,
-                            status
+                            cat?.name || '', p.name, p.supplier || '-', p.unit, p.current, p.minStock, status
                         ];
                     }),
                 ];
@@ -424,9 +415,9 @@
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
                         <div className="text-center">
-                            <div className="text-6xl mb-4">☕</div>
+                            <div className="text-6xl mb-6">☕</div>
                             <Loader />
-                            <p className="text-white text-xl font-semibold mt-4">{loadingMessage}</p>
+                            <p className="text-white text-xl font-semibold mt-6">Yükleniyor...</p>
                         </div>
                     </div>
                 );
@@ -527,7 +518,7 @@
                             <div className="bg-white rounded-2xl p-6 max-w-md w-full">
                                 <div className="text-center mb-6">
                                     <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <ShoppingCart className="text-amber-600" />
+                                        <ShoppingCart />
                                     </div>
                                     <h3 className="text-2xl font-bold text-gray-800">Sipariş Onayı</h3>
                                     <p className="text-gray-600 mt-2">Sipariş listesini indirmek istediğinize emin misiniz?</p>
@@ -549,7 +540,7 @@
 
                                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
                                     <div className="flex items-start gap-2">
-                                        <Clock className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                                        <Clock />
                                         <div className="text-sm text-blue-800">
                                             <strong>Not:</strong> Sipariş verildikten sonra ürünler <strong>"Sipariş Verildi"</strong> olarak işaretlenecektir. Stok miktarları otomatik güncellenmeyecektir.
                                         </div>
@@ -584,14 +575,12 @@
                                 </div>
                                 
                                 <div className="mb-6">
-                                    <h4 className="font-semibold mb-3 text-gray-700 flex items-center gap-2">
-                                        📁 Kategoriler
-                                    </h4>
+                                    <h4 className="font-semibold mb-3 text-gray-700">📁 Kategoriler</h4>
                                     {categories.map(cat => (
                                         <div key={cat.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
                                             <span>{cat.icon} {cat.name}</span>
                                             <button onClick={() => deleteCategory(cat.id)} className="text-red-600 p-1">
-                                                <Trash2 />
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     ))}
@@ -599,14 +588,14 @@
                                         onClick={() => { setShowAddCategory(true); setShowMenu(false); }}
                                         className="w-full mt-2 flex items-center justify-center gap-2 p-2 bg-amber-100 text-amber-700 rounded-lg"
                                     >
-                                        <Plus />
+                                        <Plus size={18} />
                                         Kategori Ekle
                                     </button>
                                 </div>
 
                                 <div className="mb-6">
                                     <h4 className="font-semibold mb-3 text-gray-700 flex items-center gap-2">
-                                        <Truck />
+                                        <Truck size={18} />
                                         Tedarikçiler
                                     </h4>
                                     <div className="max-h-32 overflow-y-auto mb-2">
@@ -624,14 +613,14 @@
                                             onClick={() => { setShowAddSupplier(true); setShowMenu(false); }}
                                             className="flex-1 flex items-center justify-center gap-2 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm"
                                         >
-                                            <Plus />
+                                            <Plus size={16} />
                                             Ekle
                                         </button>
                                         <button
                                             onClick={() => { setShowManageSuppliers(true); setShowMenu(false); }}
                                             className="flex-1 flex items-center justify-center gap-2 p-2 bg-gray-100 text-gray-700 rounded-lg text-sm"
                                         >
-                                            <Edit2 />
+                                            <Edit2 size={16} />
                                             Düzenle
                                         </button>
                                     </div>
@@ -642,21 +631,21 @@
                                         onClick={() => { exportAllProducts(); setShowMenu(false); }}
                                         className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg"
                                     >
-                                        <Download />
+                                        <Download size={20} />
                                         <span>Tüm Ürünleri İndir</span>
                                     </button>
                                     <button
                                         onClick={() => { confirmAndExportOrder(); setShowMenu(false); }}
                                         className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg"
                                     >
-                                        <ShoppingCart />
+                                        <ShoppingCart size={20} />
                                         <span>Sipariş Listesini İndir</span>
                                     </button>
                                     <button
                                         onClick={() => { clearAllOrders(); setShowMenu(false); }}
                                         className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg text-red-600"
                                     >
-                                        <Trash2 />
+                                        <Trash2 size={20} />
                                         <span>Siparişleri Temizle</span>
                                     </button>
                                 </div>
@@ -749,7 +738,7 @@
                                                         onClick={() => deleteSupplier(sup)}
                                                         className="text-red-600 p-2 hover:bg-red-50 rounded"
                                                     >
-                                                        <Trash2 />
+                                                        <Trash2 size={18} />
                                                     </button>
                                                 </div>
                                             );
@@ -758,7 +747,7 @@
                                             onClick={() => { setShowManageSuppliers(false); setShowAddSupplier(true); }}
                                             className="w-full mt-4 flex items-center justify-center gap-2 p-3 bg-blue-100 text-blue-700 rounded-lg font-semibold"
                                         >
-                                            <Plus />
+                                            <Plus size={18} />
                                             Yeni Tedarikçi Ekle
                                         </button>
                                     </div>
@@ -848,10 +837,10 @@
                                 </div>
 
                                 <div className="flex gap-2">
-                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold active:bg-amber-700">
+                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">
                                         Ekle
                                     </button>
-                                    <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold active:bg-gray-300">
+                                    <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">
                                         İptal
                                     </button>
                                 </div>
@@ -889,7 +878,7 @@
                                 <select
                                     value={editingProduct.unit}
                                     onChange={(e) => setEditingProduct({ ...editingProduct, unit: e.target.value })}
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3"
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3"
                                 >
                                     <option value="adet">Adet</option>
                                     <option value="kg">Kilogram (kg)</option>
@@ -944,8 +933,8 @@
                                 
                                 {orderHistory.length === 0 ? (
                                     <div className="text-center py-12 text-gray-500">
-                                        <History />
-                                        <p className="mt-4">Henüz sipariş kaydı yok</p>
+                                        <div className="mx-auto mb-4"><History size={48} /></div>
+                                        <p>Henüz sipariş kaydı yok</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
@@ -973,3 +962,194 @@
                                                         <div key={idx} className="text-sm text-gray-700 flex justify-between">
                                                             <span>{item.name}</span>
                                                             <span className="font-semibold">{item.quantity} {item.unit}</span>
+                                                        </div>
+                                                    ))}
+                                                    {order.items.length > 5 && (
+                                                        <p className="text-sm text-gray-500 italic">
+                                                            +{order.items.length - 5} ürün daha...
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="p-4">
+                        <div className="relative mb-4">
+                            <input
+                                type="text"
+                                placeholder="Ürün veya tedarikçi ara..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:border-amber-500 focus:outline-none"
+                            />
+                            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                <Search />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="px-4 overflow-x-auto pb-2">
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setSelectedCategory(null)}
+                                className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
+                                    selectedCategory === null ? 'bg-amber-600 text-white' : 'bg-white text-gray-700'
+                                }`}
+                            >
+                                Tümü ({products.length})
+                            </button>
+                            {categories.map(cat => {
+                                const count = products.filter(p => p.categoryId === cat.id).length;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategory(cat.id)}
+                                        className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
+                                            selectedCategory === cat.id ? 'bg-amber-600 text-white' : 'bg-white text-gray-700'
+                                        }`}
+                                    >
+                                        {cat.icon} {cat.name} ({count})
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="px-4 space-y-3 pb-4 mt-4">
+                        {filteredProducts.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-xl">
+                                <div className="text-6xl mb-4">🔍</div>
+                                <p className="text-gray-500 font-semibold">
+                                    {searchQuery ? 'Ürün bulunamadı' : 'Bu kategoride henüz ürün yok'}
+                                </p>
+                                {!searchQuery && (
+                                    <button
+                                        onClick={() => setShowAddProduct(true)}
+                                        className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg font-semibold"
+                                    >
+                                        İlk Ürünü Ekle
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            filteredProducts.map(product => {
+                                const isLowStock = product.current <= product.minStock;
+                                const isOrdered = product.orderStatus === 'ordered';
+                                return (
+                                    <div key={product.id} className={`bg-white rounded-xl shadow-md p-4 ${isLowStock ? 'border-l-4 border-red-500' : ''}`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-gray-800 flex items-center gap-2 flex-wrap">
+                                                    {product.name}
+                                                    {isLowStock && (
+                                                        <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
+                                                            DÜŞÜK
+                                                        </span>
+                                                    )}
+                                                    {isOrdered && (
+                                                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                                            <Clock />
+                                                            Sipariş Verildi
+                                                        </span>
+                                                    )}
+                                                </h3>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {categories.find(c => c.id === product.categoryId)?.icon} {categories.find(c => c.id === product.categoryId)?.name || 'Kategori yok'}
+                                                    {product.supplier && ` • ${product.supplier}`}
+                                                </p>
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    Min. Stok: {product.minStock} {product.unit}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <button 
+                                                    onClick={() => setEditingProduct(product)} 
+                                                    className="text-blue-600 p-1"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => deleteProduct(product.id)} 
+                                                    className="text-red-600 p-1"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-xs text-gray-600 mb-1 block font-semibold">Mevcut Stok</label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        value={product.current}
+                                                        onChange={(e) => updateProduct(product.id, 'current', e.target.value)}
+                                                        className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg focus:outline-none ${
+                                                            isLowStock ? 'border-red-300 bg-red-50 focus:border-red-500' : 'border-gray-300 focus:border-amber-500'
+                                                        }`}
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="text-xs text-orange-600 mb-1 block font-semibold">Sipariş Ver</label>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        value={product.orderQty}
+                                                        onChange={(e) => {
+                                                            updateProduct(product.id, 'orderQty', e.target.value);
+                                                            if (parseFloat(e.target.value) > 0) {
+                                                                updateProduct(product.id, 'orderStatus', '');
+                                                            }
+                                                        }}
+                                                        className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300 focus:border-orange-500 focus:outline-none"
+                                                        min="0"
+                                                        step="0.1"
+                                                    />
+                                                    <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+                        {getTotalOrderItems() > 0 && (
+                            <button
+                                onClick={confirmAndExportOrder}
+                                className="bg-green-600 text-white p-4 rounded-full shadow-2xl flex items-center gap-2 hover:bg-green-700 active:bg-green-800"
+                            >
+                                <ShoppingCart />
+                                <span className="bg-white text-green-600 px-2 py-1 rounded-full text-sm font-bold">
+                                    {getTotalOrderItems()}
+                                </span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => setShowAddProduct(true)}
+                            className="bg-amber-600 text-white p-5 rounded-full shadow-2xl hover:bg-amber-700 active:bg-amber-800"
+                        >
+                            <Plus />
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<CoffeeInventory />, document.getElementById('root'));
+    </script>
+</body>
+</html>
