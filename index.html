@@ -157,11 +157,11 @@
                 }
             };
 
-            const saveProducts = async (newProducts) => {
+            const saveProducts = (newProducts) => {
                 setProducts(newProducts);
                 if (typeof window.storage !== 'undefined') {
                     try {
-                        await window.storage.set('coffee-products', JSON.stringify(newProducts));
+                        window.storage.set('coffee-products', JSON.stringify(newProducts));
                     } catch (error) {
                         console.error('Ürün kaydetme hatası:', error);
                     }
@@ -248,19 +248,32 @@
                 showNotification('✓ Tedarikçi eklendi', 'success');
             };
 
-            const updateProduct = async (id, field, value) => {
+            const updateProduct = (id, field, value) => {
                 const newProducts = products.map(p => {
                     if (p.id === id) {
                         if (field === 'supplier' || field === 'orderStatus') {
                             return { ...p, [field]: value };
                         } else {
-                            const numValue = value === '' ? 0 : parseFloat(value);
-                            return { ...p, [field]: isNaN(numValue) ? 0 : numValue };
+                            const numValue = value === '' ? '' : value;
+                            return { ...p, [field]: numValue };
                         }
                     }
                     return p;
                 });
-                await saveProducts(newProducts);
+                setProducts(newProducts);
+                
+                // Storage'a kaydet
+                if (typeof window.storage !== 'undefined') {
+                    try {
+                        window.storage.set('coffee-products', JSON.stringify(newProducts.map(p => ({
+                            ...p,
+                            current: p.current === '' ? 0 : parseFloat(p.current) || 0,
+                            orderQty: p.orderQty === '' ? 0 : parseFloat(p.orderQty) || 0
+                        }))));
+                    } catch (error) {
+                        console.error('Kaydetme hatası:', error);
+                    }
+                }
             };
 
             const saveEditedProduct = () => {
@@ -1113,22 +1126,12 @@
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
-                                                        value={product.orderQty || ''}
+                                                        value={product.orderQty === 0 ? '' : product.orderQty}
                                                         onChange={(e) => {
                                                             const val = e.target.value;
-                                                            updateProduct(product.id, 'orderQty', val);
+                                                            updateProduct(product.id, 'orderQty', val === '' ? 0 : val);
                                                             if (parseFloat(val) > 0) {
                                                                 updateProduct(product.id, 'orderStatus', '');
-                                                            }
-                                                        }}
-                                                        onFocus={(e) => {
-                                                            if (e.target.value === '0') {
-                                                                e.target.value = '';
-                                                            }
-                                                        }}
-                                                        onBlur={(e) => {
-                                                            if (e.target.value === '') {
-                                                                updateProduct(product.id, 'orderQty', 0);
                                                             }
                                                         }}
                                                         className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300 focus:border-orange-500 focus:outline-none"
