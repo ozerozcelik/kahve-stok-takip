@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         input[type="number"]::-webkit-inner-spin-button,
@@ -166,20 +167,53 @@
                     return;
                 }
                 
-                const csv = [
-                    ['Kategori', 'Ürün', 'Birim', 'Mevcut Stok', 'Sipariş Miktarı'],
+                // Excel için veri hazırla
+                const excelData = [
+                    ['SİPARİŞ LİSTESİ'],
+                    ['Tarih:', new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })],
+                    ['Saat:', new Date().toLocaleTimeString('tr-TR')],
+                    ['Sipariş Veren:', userName],
+                    [],
+                    ['Kategori', 'Ürün', 'Birim', 'Mevcut Stok', 'Sipariş Miktarı', 'Notlar'],
                     ...orderItems.map(p => {
                         const cat = categories.find(c => c.id === p.categoryId);
-                        return [cat?.name || '', p.name, p.unit, p.current, p.orderQty];
-                    })
-                ].map(row => row.join(',')).join('\n');
+                        return [
+                            cat?.name || '', 
+                            p.name, 
+                            p.unit, 
+                            p.current, 
+                            p.orderQty,
+                            ''
+                        ];
+                    }),
+                    [],
+                    ['TOPLAM KALEM:', orderItems.length],
+                ];
+
+                // Excel workbook oluştur
+                const ws = XLSX.utils.aoa_to_sheet(excelData);
                 
-                const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `siparis-${new Date().toLocaleDateString('tr-TR')}.csv`;
-                link.click();
-                showNotification('Sipariş listesi indirildi');
+                // Sütun genişlikleri
+                ws['!cols'] = [
+                    { wch: 25 }, // Kategori
+                    { wch: 30 }, // Ürün
+                    { wch: 10 }, // Birim
+                    { wch: 15 }, // Mevcut Stok
+                    { wch: 18 }, // Sipariş Miktarı
+                    { wch: 30 }, // Notlar
+                ];
+
+                // Başlık satırını birleştir ve stillendir
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Sipariş Listesi');
+                
+                // Excel dosyası indir
+                XLSX.writeFile(wb, `Siparis_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.xlsx`);
+                showNotification('Excel dosyası indirildi');
             };
 
             const clearAllOrders = () => {
