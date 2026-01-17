@@ -107,18 +107,18 @@
 
             const addProduct = () => {
                 if (!newProduct.name.trim()) {
-                    alert('Ürün adı girin');
+                    alert('❌ Ürün adı giriniz');
                     return;
                 }
                 if (!selectedCategory) {
-                    alert('Önce bir kategori seçin');
+                    alert('❌ Lütfen bir kategori seçin');
                     return;
                 }
                 const newProd = { id: Date.now(), categoryId: selectedCategory, ...newProduct };
                 saveProducts([...products, newProd]);
                 setNewProduct({ name: '', unit: 'adet', current: 0, orderQty: 0 });
                 setShowAddProduct(false);
-                showNotification('Ürün eklendi');
+                showNotification('Ürün başarıyla eklendi');
             };
 
             const updateProduct = (id, field, value) => {
@@ -363,38 +363,61 @@
                     {showAddProduct && (
                         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-                                <h3 className="text-xl font-bold mb-4">Yeni Ürün</h3>
+                                <h3 className="text-xl font-bold mb-4">Yeni Ürün Ekle</h3>
+                                
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Kategori Seçin *</label>
+                                <select
+                                    value={selectedCategory || ''}
+                                    onChange={(e) => setSelectedCategory(Number(e.target.value))}
+                                    className="w-full px-4 py-3 border-2 border-amber-200 rounded-lg mb-3 font-semibold"
+                                >
+                                    <option value="">Kategori seçiniz</option>
+                                    {categories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.icon} {cat.name}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Ürün Adı *</label>
                                 <input
                                     type="text"
-                                    placeholder="Ürün adı"
+                                    placeholder="Örn: Espresso Çekirdeği"
                                     value={newProduct.name}
                                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                                    className="w-full px-4 py-3 border rounded-lg mb-3"
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3"
                                 />
+
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Birim *</label>
                                 <select
                                     value={newProduct.unit}
                                     onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-                                    className="w-full px-4 py-3 border rounded-lg mb-3"
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-3"
                                 >
                                     <option value="adet">Adet</option>
-                                    <option value="kg">Kilogram</option>
+                                    <option value="kg">Kilogram (kg)</option>
+                                    <option value="gram">Gram (gr)</option>
                                     <option value="litre">Litre</option>
+                                    <option value="ml">Mililitre (ml)</option>
                                     <option value="paket">Paket</option>
                                     <option value="şişe">Şişe</option>
                                     <option value="kutu">Kutu</option>
+                                    <option value="koli">Koli</option>
                                 </select>
+
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Mevcut Stok</label>
                                 <input
                                     type="number"
-                                    placeholder="Mevcut stok"
+                                    placeholder="0"
                                     value={newProduct.current}
                                     onChange={(e) => setNewProduct({ ...newProduct, current: e.target.value })}
-                                    className="w-full px-4 py-3 border rounded-lg mb-4"
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg mb-4"
                                 />
                                 <div className="flex gap-2">
-                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">
+                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold active:bg-amber-700">
                                         Ekle
                                     </button>
-                                    <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">
+                                    <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold active:bg-gray-300">
                                         İptal
                                     </button>
                                 </div>
@@ -426,45 +449,65 @@
                         </div>
                     </div>
 
-                    <div className="px-4 space-y-3">
-                        {filteredProducts.map(product => (
-                            <div key={product.id} className="bg-white rounded-xl shadow-md p-4">
-                                <div className="flex justify-between items-start mb-3">
-                                    <h3 className="font-bold text-gray-800">{product.name}</h3>
-                                    <button onClick={() => deleteProduct(product.id)} className="text-red-600 p-1">
-                                        <Trash2 />
-                                    </button>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-xs text-gray-600 mb-1 block">Mevcut Stok</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={product.current}
-                                                onChange={(e) => updateProduct(product.id, 'current', e.target.value)}
-                                                className="w-full px-3 py-2 border rounded-lg font-semibold"
-                                            />
-                                            <span className="text-gray-600 text-sm">{product.unit}</span>
+                    <div className="px-4 space-y-3 pb-4">
+                        {filteredProducts.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-xl">
+                                <div className="text-6xl mb-4">📦</div>
+                                <p className="text-gray-500 font-semibold">Bu kategoride henüz ürün yok</p>
+                                <button
+                                    onClick={() => setShowAddProduct(true)}
+                                    className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg font-semibold"
+                                >
+                                    İlk Ürünü Ekle
+                                </button>
+                            </div>
+                        ) : (
+                            filteredProducts.map(product => (
+                                <div key={product.id} className="bg-white rounded-xl shadow-md p-4">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h3 className="font-bold text-gray-800">{product.name}</h3>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {categories.find(c => c.id === product.categoryId)?.name || 'Kategori yok'}
+                                            </p>
                                         </div>
+                                        <button onClick={() => deleteProduct(product.id)} className="text-red-600 p-1">
+                                            <Trash2 />
+                                        </button>
                                     </div>
                                     
-                                    <div>
-                                        <label className="text-xs text-gray-600 mb-1 block">Sipariş Ver</label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={product.orderQty}
-                                                onChange={(e) => updateProduct(product.id, 'orderQty', e.target.value)}
-                                                className="w-full px-3 py-2 border rounded-lg font-semibold bg-orange-50 border-orange-300"
-                                            />
-                                            <span className="text-gray-600 text-sm">{product.unit}</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-600 mb-1 block font-semibold">Mevcut Stok</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={product.current}
+                                                    onChange={(e) => updateProduct(product.id, 'current', e.target.value)}
+                                                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg font-bold text-lg focus:border-amber-500 focus:outline-none"
+                                                    min="0"
+                                                />
+                                                <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="text-xs text-orange-600 mb-1 block font-semibold">Sipariş Ver</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={product.orderQty}
+                                                    onChange={(e) => updateProduct(product.id, 'orderQty', e.target.value)}
+                                                    className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300 focus:border-orange-500 focus:outline-none"
+                                                    min="0"
+                                                />
+                                                <span className="text-gray-600 text-sm font-semibold whitespace-nowrap">{product.unit}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
 
                     <div className="fixed bottom-6 right-6 z-50">
