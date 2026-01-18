@@ -28,7 +28,7 @@
         const SUPABASE_URL = 'https://fkbsfnomyotbmhcquiyp.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_xYb8cHMZ_XWaTVlqSxzPIA_wwPWnNI3';
         
-        const supabase = SUPABASE_URL !== 'https://fkbsfnomyotbmhcquiyp.supabase.co' 
+        const supabase = SUPABASE_URL === 'https://fkbsfnomyotbmhcquiyp.supabase.co' 
             ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
             : null;
 
@@ -302,7 +302,7 @@
                         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full">
                             <div className="text-center mb-6">
                                {/* BURAYA LOGO EKLEYIN */}
-                                <img src="https://ibb.co/Qv71vdYf" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
+                                <img src="https://i.ibb.co/JjWMjQrK/Ads-z-tasar-m-15.png" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
                                 {/* veya metin logo: */}
                                 <div className="text-4xl font-bold text-[#7bb2b4] mb-2">Luma Coffee Co.</div>
                                 <h1 className="text-2xl font-bold text-[#7bb2b4]">Stok Yönetimi</h1>
@@ -311,7 +311,7 @@
                             <input type="text" placeholder="İsminizi girin" className="w-full px-4 py-3 border-2 border-[#9bc9cb] rounded-lg text-lg focus:border-[#7bb2b4] focus:outline-none"
                                 onKeyPress={(e) => { if (e.key === 'Enter' && e.target.value.trim()) { setUserName(e.target.value.trim()); setShowNamePrompt(false); } }} autoFocus />
                             <button onClick={(e) => { const inp = e.target.previousSibling; if (inp.value.trim()) { setUserName(inp.value.trim()); setShowNamePrompt(false); } }}
-                                className="w-full mt-4 bg-amber-600 text-white py-3 rounded-lg font-semibold text-lg">Başla</button>
+                                className="w-full mt-4 bg-[#7bb2b4] text-white py-3 rounded-lg font-semibold text-lg">Başla</button>
                         </div>
                     </div>
                 );
@@ -376,7 +376,7 @@
                                         </div>
                                     ))}
                                     <button onClick={() => { setShowAddCategory(true); setShowMenu(false); }}
-                                        className="w-full mt-2 flex items-center justify-center gap-2 p-2 bg-amber-100 text-amber-700 rounded-lg">
+                                        className="w-full mt-2 flex items-center justify-center gap-2 p-2 bg-[#9bc9cb] text-[#5a9294] rounded-lg">
                                         <Plus />Kategori Ekle
                                     </button>
                                 </div>
@@ -525,7 +525,7 @@
                                             className="w-full px-4 py-3 border-2 rounded-lg" /></div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">Ekle</button>
+                                    <button onClick={addProduct} className="flex-1 bg-[#7bb2b4] text-white py-3 rounded-lg font-semibold">Ekle</button>
                                     <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">İptal</button>
                                 </div>
                             </div>
@@ -613,7 +613,7 @@
                                                         <p className="text-sm text-gray-600">{new Date(h.date).toLocaleDateString('tr-TR', { 
                                                             year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
                                                         })}</p></div>
-                                                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-semibold">{h.items?.length || 0} Kalem</span>
+                                                    <span className="bg-[#9bc9cb] text-[#5a9294] px-3 py-1 rounded-full text-sm font-semibold">{h.items?.length || 0} Kalem</span>
                                                 </div>
                                                 <div className="space-y-1">
                                                     {(h.items || []).slice(0, 5).map((item, i) => (
@@ -642,21 +642,21 @@
                         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
                             {[['name', 'A-Z'], ['nameDesc', 'Z-A'], ['stock', 'Stok↑'], ['stockDesc', 'Stok↓'], ['lowStock', 'Düşük Önce']].map(([val, lbl]) => (
                                 <button key={val} onClick={() => setSortBy(val)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === val ? 'bg-amber-600 text-white' : 'bg-white'}`}>
+                                    className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === val ? 'bg-[#7bb2b4] text-white' : 'bg-white'}`}>
                                     {lbl}
                                 </button>
                             ))}
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2">
                             <button onClick={() => setSelectedCategory(null)}
-                                className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${selectedCategory === null ? 'bg-amber-600 text-white' : 'bg-white'}`}>
+                                className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${selectedCategory === null ? 'bg-[#7bb2b4] text-white' : 'bg-white'}`}>
                                 Tümü ({products.length})
                             </button>
                             {categories.map(cat => {
                                 const cnt = products.filter(p => p.categoryId === cat.id).length;
                                 return (
                                     <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                                        className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${selectedCategory === cat.id ? 'bg-amber-600 text-white' : 'bg-white'}`}>
+                                        className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${selectedCategory === cat.id ? 'bg-[#7bb2b4] text-white' : 'bg-white'}`}>
                                         {cat.icon} {cat.name} ({cnt})
                                     </button>
                                 );
@@ -728,7 +728,7 @@
                                 <span className="bg-white text-green-600 px-2 py-1 rounded-full text-sm font-bold">{orderCount}</span>
                             </button>
                         )}
-                        <button onClick={() => setShowAddProduct(true)} className="bg-amber-600 text-white p-5 rounded-full shadow-2xl">
+                        <button onClick={() => setShowAddProduct(true)} className="bg-[#7bb2b4] text-white p-5 rounded-full shadow-2xl">
                             <Plus />
                         </button>
                     </div>
