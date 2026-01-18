@@ -2,20 +2,18 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>☕ Kahve Stok Takip</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner { animation: spin 1s linear infinite; }
     </style>
@@ -26,105 +24,274 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        const CoffeeInventory = () => {
-            const defaultCategories = [
-                { id: 1, name: 'Kahve & Çekirdek', icon: '☕' },
-                { id: 2, name: 'Süt & Krema', icon: '🥛' },
-                { id: 3, name: 'Şeker & Tatlandırıcı', icon: '🍬' },
-                { id: 4, name: 'Bardak & Kapak', icon: '🥤' },
-                { id: 5, name: 'Sos & Şurup', icon: '🍯' },
-                { id: 6, name: 'Diğer Malzemeler', icon: '📦' },
-            ];
+        // ⚙️ SUPABASE AYARLARI
+        const SUPABASE_URL = 'https://fkbsfnomyotbmhcquiyp.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_xYb8cHMZ_XWaTVlqSxzPIA_wwPWnNI3';
+        
+        const supabase = SUPABASE_URL !== 'BURAYA_PROJECT_URL_YAPISTIR' 
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : null;
 
-            const defaultProducts = [
-                { id: 1, categoryId: 1, name: 'Espresso Çekirdeği', unit: 'kg', current: 5, orderQty: 0, minStock: 3, supplier: 'Kahve Dünyası', orderStatus: '' },
-                { id: 2, categoryId: 1, name: 'Filter Kahve Çekirdeği', unit: 'kg', current: 3, orderQty: 0, minStock: 2, supplier: 'Kahve Dünyası', orderStatus: '' },
-                { id: 3, categoryId: 2, name: 'Tam Yağlı Süt', unit: 'litre', current: 15, orderQty: 0, minStock: 10, supplier: 'Pınar', orderStatus: '' },
-            ];
+        // Icons (sadece gerekli olanlar)
+        const Plus = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+        const X = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+        const Menu = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>;
+        const Search = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
+        const ShoppingCart = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>;
+        const Trash2 = () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+        const Edit2 = () => <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>;
+        const RefreshCw = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>;
+        const Download = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+        const History = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>;
+        const Loader = () => <svg className="spinner" width="48" height="48" fill="none" stroke="white" strokeWidth="2"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/></svg>;
+        const Truck = () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
 
-            const [categories, setCategories] = useState(defaultCategories);
-            const [products, setProducts] = useState(defaultProducts);
-            const [suppliers, setSuppliers] = useState(['Kahve Dünyası', 'Pınar', 'Metro']);
+        const App = () => {
+            const [categories, setCategories] = useState([]);
+            const [products, setProducts] = useState([]);
+            const [suppliers, setSuppliers] = useState([]);
             const [orderHistory, setOrderHistory] = useState([]);
             const [selectedCategory, setSelectedCategory] = useState(null);
             const [searchQuery, setSearchQuery] = useState('');
             const [showMenu, setShowMenu] = useState(false);
             const [showAddProduct, setShowAddProduct] = useState(false);
-            const [showStats, setShowStats] = useState(false);
+            const [showAddCategory, setShowAddCategory] = useState(false);
+            const [showAddSupplier, setShowAddSupplier] = useState(false);
+            const [showManageSuppliers, setShowManageSuppliers] = useState(false);
+            const [showHistory, setShowHistory] = useState(false);
+            const [showOrderConfirm, setShowOrderConfirm] = useState(false);
+            const [editingProduct, setEditingProduct] = useState(null);
+            const [newCategory, setNewCategory] = useState({ name: '', icon: '📦' });
+            const [newProduct, setNewProduct] = useState({ name: '', unit: 'adet', current: 0, minStock: 0, supplier: '' });
+            const [newSupplier, setNewSupplier] = useState('');
             const [userName, setUserName] = useState('');
             const [showNamePrompt, setShowNamePrompt] = useState(true);
             const [isLoading, setIsLoading] = useState(true);
-            const [darkMode, setDarkMode] = useState(false);
             const [sortBy, setSortBy] = useState('name');
 
-            useEffect(() => {
-                setTimeout(() => setIsLoading(false), 500);
-            }, []);
+            useEffect(() => { loadData(); }, []);
 
-            const updateProduct = (id, field, value) => {
+            const loadData = async () => {
+                setIsLoading(true);
+                if (supabase) {
+                    try {
+                        const [cat, prod, supp, hist] = await Promise.all([
+                            supabase.from('categories').select('*').order('id'),
+                            supabase.from('products').select('*').order('id'),
+                            supabase.from('suppliers').select('*').order('name'),
+                            supabase.from('order_history').select('*').order('date', { ascending: false }).limit(50)
+                        ]);
+                        if (cat.data) setCategories(cat.data);
+                        if (prod.data) setProducts(prod.data.map(p => ({
+                            ...p, categoryId: p.category_id, orderQty: p.order_qty || 0,
+                            minStock: p.min_stock || 0, orderStatus: p.order_status || ''
+                        })));
+                        if (supp.data) setSuppliers(supp.data.map(s => s.name));
+                        if (hist.data) setOrderHistory(hist.data);
+                    } catch (e) { console.error('Load error:', e); }
+                }
+                setIsLoading(false);
+            };
+
+            const notify = (msg, type = 'success') => {
+                const bg = type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444' : '#f59e0b';
+                const d = document.createElement('div');
+                d.style.cssText = `position:fixed;top:16px;left:50%;transform:translateX(-50%);background:${bg};color:white;padding:12px 24px;border-radius:8px;z-index:9999;font-weight:600;box-shadow:0 4px 6px rgba(0,0,0,0.2);`;
+                d.textContent = msg;
+                document.body.appendChild(d);
+                setTimeout(() => d.remove(), 3000);
+            };
+
+            const addCategory = async () => {
+                if (!newCategory.name.trim()) return notify('❌ Kategori adı girin', 'error');
+                if (supabase) {
+                    const { error } = await supabase.from('categories').insert([newCategory]);
+                    if (error) return notify('❌ Eklenemedi', 'error');
+                    await loadData();
+                }
+                setNewCategory({ name: '', icon: '📦' });
+                setShowAddCategory(false);
+                notify('✓ Kategori eklendi');
+            };
+
+            const addProduct = async () => {
+                if (!newProduct.name.trim()) return notify('❌ Ürün adı girin', 'error');
+                if (!selectedCategory) return notify('❌ Kategori seçin', 'error');
+                if (supabase) {
+                    const { error } = await supabase.from('products').insert([{
+                        category_id: selectedCategory, name: newProduct.name, unit: newProduct.unit,
+                        current: parseFloat(newProduct.current) || 0, order_qty: 0,
+                        min_stock: parseFloat(newProduct.minStock) || 0, supplier: newProduct.supplier, order_status: ''
+                    }]);
+                    if (error) return notify('❌ Eklenemedi', 'error');
+                    await loadData();
+                }
+                setNewProduct({ name: '', unit: 'adet', current: 0, minStock: 0, supplier: '' });
+                setShowAddProduct(false);
+                notify('✓ Ürün eklendi');
+            };
+
+            const addSupplier = async () => {
+                if (!newSupplier.trim()) return notify('❌ Tedarikçi adı girin', 'error');
+                if (supabase) {
+                    const { error } = await supabase.from('suppliers').insert([{ name: newSupplier.trim() }]);
+                    if (error) {
+                        if (error.code === '23505') return notify('❌ Zaten mevcut', 'error');
+                        return notify('❌ Eklenemedi', 'error');
+                    }
+                    await loadData();
+                }
+                setNewSupplier('');
+                setShowAddSupplier(false);
+                notify('✓ Tedarikçi eklendi');
+            };
+
+            const updateProduct = async (id, field, value) => {
+                if (supabase) {
+                    const dbField = field === 'orderQty' ? 'order_qty' : field === 'minStock' ? 'min_stock' :
+                                   field === 'categoryId' ? 'category_id' : field === 'orderStatus' ? 'order_status' : field;
+                    await supabase.from('products').update({ [dbField]: value }).eq('id', id);
+                }
                 setProducts(prev => prev.map(p => {
                     if (p.id === id) {
-                        const updated = { ...p, [field]: value };
-                        if (field === 'orderQty' && parseFloat(value) > 0 && p.orderStatus === 'ordered') {
-                            updated.orderStatus = '';
-                        }
-                        return updated;
+                        const upd = { ...p, [field]: value };
+                        if (field === 'orderQty' && parseFloat(value) > 0 && p.orderStatus === 'ordered') upd.orderStatus = '';
+                        return upd;
                     }
                     return p;
                 }));
             };
 
-            const quickUpdateStock = (id, amount) => {
-                setProducts(prev => prev.map(p => 
-                    p.id === id ? { ...p, current: Math.max(0, (parseFloat(p.current) || 0) + amount) } : p
-                ));
-            };
-
-            const getCategoryStats = () => {
-                return categories.map(cat => {
-                    const categoryProducts = products.filter(p => p.categoryId === cat.id);
-                    const lowStockCount = categoryProducts.filter(p => p.current <= p.minStock).length;
-                    const totalStock = categoryProducts.reduce((sum, p) => sum + (parseFloat(p.current) || 0), 0);
-                    return {
-                        ...cat,
-                        productCount: categoryProducts.length,
-                        lowStockCount,
-                        totalStock: totalStock.toFixed(1)
-                    };
-                });
-            };
-
-            const exportOrderList = () => {
-                const orderItems = products.filter(p => p.orderQty > 0);
-                if (orderItems.length === 0) {
-                    alert('Sipariş listesi boş');
-                    return;
+            const saveEditedProduct = async () => {
+                if (!editingProduct.name.trim()) return notify('❌ Ürün adı boş olamaz', 'error');
+                if (supabase) {
+                    const { error } = await supabase.from('products').update({
+                        category_id: editingProduct.categoryId, name: editingProduct.name, unit: editingProduct.unit,
+                        min_stock: parseFloat(editingProduct.minStock) || 0, supplier: editingProduct.supplier
+                    }).eq('id', editingProduct.id);
+                    if (error) return notify('❌ Güncellenemedi', 'error');
+                    await loadData();
                 }
+                setEditingProduct(null);
+                notify('✓ Ürün güncellendi');
+            };
+
+            const deleteProduct = async (id) => {
+                if (!confirm('Silmek istediğinize emin misiniz?')) return;
+                if (supabase) {
+                    const { error } = await supabase.from('products').delete().eq('id', id);
+                    if (error) return notify('❌ Silinemedi', 'error');
+                    await loadData();
+                } else {
+                    setProducts(products.filter(p => p.id !== id));
+                }
+                notify('✓ Ürün silindi');
+            };
+
+            const deleteCategory = async (id) => {
+                if (products.filter(p => p.categoryId === id).length > 0) return notify('❌ Bu kategoride ürünler var', 'error');
+                if (!confirm('Kategoriyi silmek istediğinize emin misiniz?')) return;
+                if (supabase) {
+                    const { error } = await supabase.from('categories').delete().eq('id', id);
+                    if (error) return notify('❌ Silinemedi', 'error');
+                    await loadData();
+                }
+                if (selectedCategory === id) setSelectedCategory(null);
+                notify('✓ Kategori silindi');
+            };
+
+            const deleteSupplier = async (name) => {
+                if (products.filter(p => p.supplier === name).length > 0) return notify(`❌ Bu tedarikçiye bağlı ürünler var`, 'error');
+                if (!confirm(`"${name}" silinecek, emin misiniz?`)) return;
+                if (supabase) {
+                    const { error } = await supabase.from('suppliers').delete().eq('name', name);
+                    if (error) return notify('❌ Silinemedi', 'error');
+                    await loadData();
+                }
+                notify('✓ Tedarikçi silindi');
+            };
+
+            const quickUpdate = (id, delta) => {
+                const p = products.find(x => x.id === id);
+                if (p) updateProduct(id, 'current', Math.max(0, (parseFloat(p.current) || 0) + delta));
+            };
+
+            const exportOrder = async () => {
+                const items = products.filter(p => p.orderQty > 0);
+                if (items.length === 0) return notify('❌ Sipariş listesi boş', 'error');
                 
-                const excelData = [
+                const data = [
                     ['SİPARİŞ LİSTESİ'],
-                    ['Tarih:', new Date().toLocaleDateString('tr-TR')],
+                    ['Tarih:', new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })],
                     ['Sipariş Veren:', userName],
                     [],
-                    ['Ürün', 'Birim', 'Mevcut Stok', 'Sipariş Miktarı'],
-                    ...orderItems.map(p => [p.name, p.unit, p.current, p.orderQty]),
+                    ['Kategori', 'Ürün', 'Tedarikçi', 'Birim', 'Mevcut', 'Sipariş'],
+                    ...items.map(p => {
+                        const cat = categories.find(c => c.id === p.categoryId);
+                        return [cat?.name || '', p.name, p.supplier || '-', p.unit, p.current, p.orderQty];
+                    }),
+                    [],
+                    ['TOPLAM:', items.length]
                 ];
 
-                const ws = XLSX.utils.aoa_to_sheet(excelData);
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 12 }];
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Sipariş');
                 XLSX.writeFile(wb, `Siparis_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.xlsx`);
                 
-                setProducts(prev => prev.map(p => p.orderQty > 0 ? { ...p, orderStatus: 'ordered' } : p));
+                // Mark as ordered & save history
+                for (const p of items) await updateProduct(p.id, 'orderStatus', 'ordered');
+                
+                if (supabase) {
+                    await supabase.from('order_history').insert([{
+                        user_name: userName,
+                        items: items.map(p => ({
+                            name: p.name, category: categories.find(c => c.id === p.categoryId)?.name,
+                            supplier: p.supplier, quantity: p.orderQty, unit: p.unit
+                        }))
+                    }]);
+                    await loadData();
+                }
+                
+                setShowOrderConfirm(false);
+                notify('✓ Sipariş listesi indirildi');
+            };
+
+            const exportAll = () => {
+                const data = [
+                    ['TÜM ÜRÜNLER'],
+                    ['Tarih:', new Date().toLocaleDateString('tr-TR')],
+                    [],
+                    ['Kategori', 'Ürün', 'Tedarikçi', 'Birim', 'Mevcut', 'Min. Stok', 'Durum'],
+                    ...products.map(p => {
+                        const cat = categories.find(c => c.id === p.categoryId);
+                        return [cat?.name || '', p.name, p.supplier || '-', p.unit, p.current, p.minStock, 
+                                p.current <= p.minStock ? 'DÜŞÜK' : 'İYİ'];
+                    })
+                ];
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Tüm Ürünler');
+                XLSX.writeFile(wb, `Tum_Urunler_${new Date().toLocaleDateString('tr-TR').replace(/\./g, '-')}.xlsx`);
+                notify('✓ Tüm ürünler indirildi');
+            };
+
+            const clearOrders = async () => {
+                if (!confirm('Tüm siparişleri temizlemek istediğinize emin misiniz?')) return;
+                if (supabase) {
+                    await supabase.from('products').update({ order_qty: 0, order_status: '' }).gt('order_qty', 0);
+                    await loadData();
+                } else {
+                    setProducts(products.map(p => ({ ...p, orderQty: 0, orderStatus: '' })));
+                }
+                notify('✓ Siparişler temizlendi');
             };
 
             if (isLoading) {
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="text-6xl mb-6">☕</div>
-                            <p className="text-white text-xl font-semibold">Yükleniyor...</p>
-                        </div>
+                        <div className="text-center"><div className="text-6xl mb-6">☕</div><Loader /><p className="text-white text-xl font-semibold mt-6">Yükleniyor...</p></div>
                     </div>
                 );
             }
@@ -134,201 +301,416 @@
                     <div className="min-h-screen bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center p-4">
                         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full">
                             <div className="text-center mb-6">
-                                {/* BURAYA LOGO EKLEYIN */}
+                               {/* BURAYA LOGO EKLEYIN */}
                                 <img src="https://ibb.co/fgWsnVG" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
                                 {/* veya metin logo: */}
                                 <div className="text-4xl font-bold text-amber-900 mb-2">Luma Coffee Co.</div>
-                                <h1 className="text-xl font-semibold text-gray-700">Stok Yönetimi</h1>
+                                <h1 className="text-2xl font-bold text-amber-900">Stok Yönetimi</h1>
                                 <p className="text-gray-600 mt-2">Hoş geldiniz!</p>
                             </div>
-                            <input
-                                type="text"
-                                placeholder="İsminizi girin"
-                                className="w-full px-4 py-3 border-2 border-amber-200 rounded-lg text-lg focus:border-amber-500 focus:outline-none"
-                                onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && e.target.value.trim()) {
-                                        setUserName(e.target.value.trim());
-                                        setShowNamePrompt(false);
-                                    }
-                                }}
-                                autoFocus
-                            />
-                            <button
-                                onClick={(e) => {
-                                    const input = e.target.previousSibling;
-                                    if (input.value.trim()) {
-                                        setUserName(input.value.trim());
-                                        setShowNamePrompt(false);
-                                    }
-                                }}
-                                className="w-full mt-4 bg-amber-600 text-white py-3 rounded-lg font-semibold text-lg"
-                            >
-                                Başla
-                            </button>
+                            <input type="text" placeholder="İsminizi girin" className="w-full px-4 py-3 border-2 border-amber-200 rounded-lg text-lg focus:border-amber-500 focus:outline-none"
+                                onKeyPress={(e) => { if (e.key === 'Enter' && e.target.value.trim()) { setUserName(e.target.value.trim()); setShowNamePrompt(false); } }} autoFocus />
+                            <button onClick={(e) => { const inp = e.target.previousSibling; if (inp.value.trim()) { setUserName(inp.value.trim()); setShowNamePrompt(false); } }}
+                                className="w-full mt-4 bg-amber-600 text-white py-3 rounded-lg font-semibold text-lg">Başla</button>
                         </div>
                     </div>
                 );
             }
 
-            const filteredProducts = products.filter(p => {
-                const matchesCategory = selectedCategory ? p.categoryId === selectedCategory : true;
-                const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchesCategory && matchesSearch;
+            const filtered = products.filter(p => {
+                const matchCat = selectedCategory ? p.categoryId === selectedCategory : true;
+                const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                   (p.supplier && p.supplier.toLowerCase().includes(searchQuery.toLowerCase()));
+                return matchCat && matchSearch;
             });
 
-            const sortedProducts = [...filteredProducts].sort((a, b) => {
+            const sorted = [...filtered].sort((a, b) => {
                 if (sortBy === 'name') return a.name.localeCompare(b.name, 'tr');
                 if (sortBy === 'nameDesc') return b.name.localeCompare(a.name, 'tr');
                 if (sortBy === 'stock') return a.current - b.current;
                 if (sortBy === 'stockDesc') return b.current - a.current;
-                if (sortBy === 'lowStock') {
-                    const aLow = a.current <= a.minStock ? 1 : 0;
-                    const bLow = b.current <= b.minStock ? 1 : 0;
-                    return bLow - aLow;
-                }
+                if (sortBy === 'lowStock') return (b.current <= b.minStock ? 1 : 0) - (a.current <= a.minStock ? 1 : 0);
                 return 0;
             });
 
-            const lowStockProducts = products.filter(p => p.current <= p.minStock);
-            const categoryStats = getCategoryStats();
-            const totalOrderItems = products.filter(p => p.orderQty > 0).length;
+            const lowStock = products.filter(p => p.current <= p.minStock);
+            const orderCount = products.filter(p => p.orderQty > 0).length;
 
             return (
-                <div className={`min-h-screen pb-24 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-gradient-to-r from-amber-600 to-orange-600'} text-white p-4 shadow-lg sticky top-0 z-40`}>
+                <div className="min-h-screen bg-gray-50 pb-24">
+                    <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-4 shadow-lg sticky top-0 z-40">
                         <div className="flex items-center justify-between">
-                            <div>
-                                <h1 className="text-xl font-bold">☕ Stok Yönetimi</h1>
-                                <p className="text-sm opacity-80">{userName}</p>
-                            </div>
+                            <div><h1 className="text-xl font-bold">☕ Stok Yönetimi</h1><p className="text-sm opacity-80">{userName}</p></div>
                             <div className="flex gap-2">
-                                <button onClick={() => setDarkMode(!darkMode)} className="p-2 hover:bg-white/20 rounded-lg">
-                                    {darkMode ? '☀️' : '🌙'}
+                                {supabase && <button onClick={loadData} className="p-2 hover:bg-white/20 rounded-lg" title="Yenile"><RefreshCw /></button>}
+                                <button onClick={() => setShowHistory(true)} className="p-2 hover:bg-white/20 rounded-lg relative">
+                                    <History />
+                                    {orderHistory.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{orderHistory.length}</span>}
                                 </button>
-                                <button onClick={() => setShowStats(true)} className="p-2 hover:bg-white/20 rounded-lg">
-                                    📊
-                                </button>
-                                <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-white/20 rounded-lg">
-                                    ☰
-                                </button>
+                                <button onClick={() => setShowMenu(!showMenu)} className="p-2 hover:bg-white/20 rounded-lg">{showMenu ? <X /> : <Menu />}</button>
                             </div>
                         </div>
                     </div>
 
-                    {lowStockProducts.length > 0 && (
+                    {lowStock.length > 0 && (
                         <div className="bg-red-500 text-white p-4">
-                            <p className="font-bold">⚠️ {lowStockProducts.length} ürün düşük stokta!</p>
+                            <p className="font-bold">⚠️ {lowStock.length} ürün düşük stokta: {lowStock.slice(0, 3).map(p => p.name).join(', ')}{lowStock.length > 3 && ` +${lowStock.length - 3}`}</p>
                         </div>
                     )}
 
-                    {showStats && (
-                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-2xl p-6 max-w-2xl w-full max-h-96 overflow-y-auto`}>
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold">📊 İstatistikler</h3>
-                                    <button onClick={() => setShowStats(false)} className="text-2xl">×</button>
+                    {/* MENU */}
+                    {showMenu && (
+                        <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowMenu(false)}>
+                            <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-lg">Menü</h3>
+                                    <button onClick={() => setShowMenu(false)}><X /></button>
                                 </div>
                                 
-                                <div className="space-y-4">
-                                    {categoryStats.map(stat => (
-                                        <div key={stat.id} className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-lg p-4`}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="font-bold">{stat.icon} {stat.name}</h4>
-                                                {stat.lowStockCount > 0 && (
-                                                    <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
-                                                        {stat.lowStockCount} Düşük
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <p className="text-xs opacity-60">Ürün Sayısı</p>
-                                                    <p className="text-2xl font-bold">{stat.productCount}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs opacity-60">Toplam Stok</p>
-                                                    <p className="text-2xl font-bold">{stat.totalStock}</p>
-                                                </div>
-                                            </div>
+                                <div className="mb-6">
+                                    <h4 className="font-semibold mb-3 text-gray-700">📁 Kategoriler</h4>
+                                    {categories.map(cat => (
+                                        <div key={cat.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded mb-1">
+                                            <span>{cat.icon} {cat.name}</span>
+                                            <button onClick={() => deleteCategory(cat.id)} className="text-red-600 p-1"><Trash2 /></button>
                                         </div>
                                     ))}
+                                    <button onClick={() => { setShowAddCategory(true); setShowMenu(false); }}
+                                        className="w-full mt-2 flex items-center justify-center gap-2 p-2 bg-amber-100 text-amber-700 rounded-lg">
+                                        <Plus />Kategori Ekle
+                                    </button>
+                                </div>
+
+                                <div className="mb-6">
+                                    <h4 className="font-semibold mb-3 text-gray-700 flex items-center gap-2"><Truck />Tedarikçiler</h4>
+                                    <div className="max-h-32 overflow-y-auto mb-2">
+                                        {suppliers.slice(0, 3).map((s, i) => <div key={i} className="p-2 bg-gray-50 rounded mb-1 text-sm">{s}</div>)}
+                                        {suppliers.length > 3 && <p className="text-xs text-gray-500 pl-2">+{suppliers.length - 3} tedarikçi daha...</p>}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => { setShowAddSupplier(true); setShowMenu(false); }}
+                                            className="flex-1 flex items-center justify-center gap-1 p-2 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                                            <Plus />Ekle
+                                        </button>
+                                        <button onClick={() => { setShowManageSuppliers(true); setShowMenu(false); }}
+                                            className="flex-1 flex items-center justify-center gap-1 p-2 bg-gray-100 text-gray-700 rounded-lg text-sm">
+                                            <Edit2 />Düzenle
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 border-t pt-4">
+                                    <button onClick={() => { exportAll(); setShowMenu(false); }}
+                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg">
+                                        <Download />Tüm Ürünleri İndir
+                                    </button>
+                                    <button onClick={() => { if (orderCount > 0) setShowOrderConfirm(true); else notify('❌ Sipariş listesi boş', 'error'); setShowMenu(false); }}
+                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg">
+                                        <ShoppingCart />Sipariş Listesini İndir
+                                    </button>
+                                    <button onClick={() => { clearOrders(); setShowMenu(false); }}
+                                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded-lg text-red-600">
+                                        <Trash2 />Siparişleri Temizle
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="p-4">
-                        <input
-                            type="text"
-                            placeholder="Ürün ara..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className={`w-full px-4 py-3 border-2 rounded-lg ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'border-gray-300'}`}
-                        />
+                    {/* ADD CATEGORY */}
+                    {showAddCategory && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+                                <h3 className="text-xl font-bold mb-4">Yeni Kategori</h3>
+                                <input type="text" placeholder="Kategori adı" value={newCategory.name}
+                                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3" />
+                                <input type="text" placeholder="Emoji (örn: 🍰)" value={newCategory.icon}
+                                    onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-4" />
+                                <div className="flex gap-2">
+                                    <button onClick={addCategory} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">Ekle</button>
+                                    <button onClick={() => setShowAddCategory(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">İptal</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                        <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                            <button onClick={() => setSortBy('name')} className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === 'name' ? 'bg-amber-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white')}`}>A-Z</button>
-                            <button onClick={() => setSortBy('nameDesc')} className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === 'nameDesc' ? 'bg-amber-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white')}`}>Z-A</button>
-                            <button onClick={() => setSortBy('stock')} className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === 'stock' ? 'bg-amber-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white')}`}>Stok↑</button>
-                            <button onClick={() => setSortBy('stockDesc')} className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === 'stockDesc' ? 'bg-amber-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white')}`}>Stok↓</button>
-                            <button onClick={() => setSortBy('lowStock')} className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === 'lowStock' ? 'bg-red-600 text-white' : (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-white')}`}>Düşük Önce</button>
+                    {/* ADD SUPPLIER */}
+                    {showAddSupplier && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+                                <h3 className="text-xl font-bold mb-4">Yeni Tedarikçi</h3>
+                                <input type="text" placeholder="Tedarikçi adı" value={newSupplier}
+                                    onChange={(e) => setNewSupplier(e.target.value)} className="w-full px-4 py-3 border-2 rounded-lg mb-4" />
+                                <div className="flex gap-2">
+                                    <button onClick={addSupplier} className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold">Ekle</button>
+                                    <button onClick={() => setShowAddSupplier(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">İptal</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MANAGE SUPPLIERS */}
+                    {showManageSuppliers && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold">🚚 Tedarikçi Yönetimi</h3>
+                                    <button onClick={() => setShowManageSuppliers(false)}><X /></button>
+                                </div>
+                                {suppliers.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <p>Henüz tedarikçi yok</p>
+                                        <button onClick={() => { setShowManageSuppliers(false); setShowAddSupplier(true); }}
+                                            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold">İlk Tedarikçiyi Ekle</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {suppliers.map((s, i) => {
+                                            const count = products.filter(p => p.supplier === s).length;
+                                            return (
+                                                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <div><p className="font-semibold">{s}</p><p className="text-xs text-gray-500">{count} ürün</p></div>
+                                                    <button onClick={() => deleteSupplier(s)} className="text-red-600 p-2"><Trash2 /></button>
+                                                </div>
+                                            );
+                                        })}
+                                        <button onClick={() => { setShowManageSuppliers(false); setShowAddSupplier(true); }}
+                                            className="w-full mt-4 flex items-center justify-center gap-2 p-3 bg-blue-100 text-blue-700 rounded-lg font-semibold">
+                                            <Plus />Yeni Tedarikçi Ekle
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ADD PRODUCT */}
+                    {showAddProduct && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full my-8">
+                                <h3 className="text-xl font-bold mb-4">Yeni Ürün Ekle</h3>
+                                <label className="block text-sm font-semibold mb-2">Kategori *</label>
+                                <select value={selectedCategory || ''} onChange={(e) => setSelectedCategory(Number(e.target.value))}
+                                    className="w-full px-4 py-3 border-2 border-amber-200 rounded-lg mb-3">
+                                    <option value="">Kategori seçiniz</option>
+                                    {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                                </select>
+                                <label className="block text-sm font-semibold mb-2">Ürün Adı *</label>
+                                <input type="text" placeholder="Örn: Espresso Çekirdeği" value={newProduct.name}
+                                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3" />
+                                <label className="block text-sm font-semibold mb-2">Tedarikçi</label>
+                                <select value={newProduct.supplier} onChange={(e) => setNewProduct({ ...newProduct, supplier: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3">
+                                    <option value="">Seçiniz...</option>
+                                    {suppliers.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                                </select>
+                                <label className="block text-sm font-semibold mb-2">Birim *</label>
+                                <select value={newProduct.unit} onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3">
+                                    <option value="adet">Adet</option><option value="kg">Kilogram (kg)</option><option value="gram">Gram (gr)</option>
+                                    <option value="litre">Litre</option><option value="ml">Mililitre (ml)</option><option value="paket">Paket</option>
+                                    <option value="şişe">Şişe</option><option value="kutu">Kutu</option><option value="koli">Koli</option>
+                                </select>
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                    <div><label className="block text-sm font-semibold mb-2">Mevcut Stok</label>
+                                        <input type="number" placeholder="0" value={newProduct.current}
+                                            onChange={(e) => setNewProduct({ ...newProduct, current: e.target.value })}
+                                            className="w-full px-4 py-3 border-2 rounded-lg" /></div>
+                                    <div><label className="block text-sm font-semibold mb-2">Min. Stok</label>
+                                        <input type="number" placeholder="0" value={newProduct.minStock}
+                                            onChange={(e) => setNewProduct({ ...newProduct, minStock: e.target.value })}
+                                            className="w-full px-4 py-3 border-2 rounded-lg" /></div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={addProduct} className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-semibold">Ekle</button>
+                                    <button onClick={() => setShowAddProduct(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">İptal</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* EDIT PRODUCT */}
+                    {editingProduct && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                            <div className="bg-white rounded-2xl p-6 max-w-sm w-full my-8">
+                                <h3 className="text-xl font-bold mb-4">Ürün Düzenle</h3>
+                                <label className="block text-sm font-semibold mb-2">Kategori</label>
+                                <select value={editingProduct.categoryId} onChange={(e) => setEditingProduct({ ...editingProduct, categoryId: Number(e.target.value) })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3">
+                                    {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                                </select>
+                                <label className="block text-sm font-semibold mb-2">Ürün Adı</label>
+                                <input type="text" value={editingProduct.name} onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3" />
+                                <label className="block text-sm font-semibold mb-2">Birim</label>
+                                <select value={editingProduct.unit} onChange={(e) => setEditingProduct({ ...editingProduct, unit: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3">
+                                    <option value="adet">Adet</option><option value="kg">Kilogram (kg)</option><option value="gram">Gram (gr)</option>
+                                    <option value="litre">Litre</option><option value="ml">Mililitre (ml)</option><option value="paket">Paket</option>
+                                    <option value="şişe">Şişe</option><option value="kutu">Kutu</option><option value="koli">Koli</option>
+                                </select>
+                                <label className="block text-sm font-semibold mb-2">Tedarikçi</label>
+                                <select value={editingProduct.supplier || ''} onChange={(e) => setEditingProduct({ ...editingProduct, supplier: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-3">
+                                    <option value="">Seçiniz...</option>
+                                    {suppliers.map((s, i) => <option key={i} value={s}>{s}</option>)}
+                                </select>
+                                <label className="block text-sm font-semibold mb-2">Min. Stok</label>
+                                <input type="number" value={editingProduct.minStock} onChange={(e) => setEditingProduct({ ...editingProduct, minStock: e.target.value })}
+                                    className="w-full px-4 py-3 border-2 rounded-lg mb-4" />
+                                <div className="flex gap-2">
+                                    <button onClick={saveEditedProduct} className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold">Kaydet</button>
+                                    <button onClick={() => setEditingProduct(null)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">İptal</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ORDER CONFIRM */}
+                    {showOrderConfirm && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                                <h3 className="text-2xl font-bold mb-4 text-center">Sipariş Onayı</h3>
+                                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                    <p className="font-bold mb-2">{orderCount} kalem sipariş verilecek</p>
+                                    <div className="max-h-40 overflow-y-auto space-y-1">
+                                        {products.filter(p => p.orderQty > 0).map(p => (
+                                            <div key={p.id} className="text-sm flex justify-between">
+                                                <span>{p.name}</span><span className="font-semibold">{p.orderQty} {p.unit}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowOrderConfirm(false)} className="flex-1 bg-gray-200 py-3 rounded-lg font-semibold">İptal</button>
+                                    <button onClick={exportOrder} className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
+                                        <Download />İndir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* HISTORY */}
+                    {showHistory && (
+                        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-96 overflow-y-auto">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold">📋 Sipariş Geçmişi</h3>
+                                    <button onClick={() => setShowHistory(false)}><X /></button>
+                                </div>
+                                {orderHistory.length === 0 ? (
+                                    <div className="text-center py-12 text-gray-500"><p>Henüz sipariş kaydı yok</p></div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {orderHistory.map(h => (
+                                            <div key={h.id} className="bg-gray-50 rounded-lg p-4">
+                                                <div className="flex justify-between mb-2">
+                                                    <div><p className="font-bold">{h.user_name}</p>
+                                                        <p className="text-sm text-gray-600">{new Date(h.date).toLocaleDateString('tr-TR', { 
+                                                            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                                                        })}</p></div>
+                                                    <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-semibold">{h.items?.length || 0} Kalem</span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {(h.items || []).slice(0, 5).map((item, i) => (
+                                                        <div key={i} className="text-sm flex justify-between">
+                                                            <span>{item.name}</span><span className="font-semibold">{item.quantity} {item.unit}</span>
+                                                        </div>
+                                                    ))}
+                                                    {h.items?.length > 5 && <p className="text-sm text-gray-500 italic">+{h.items.length - 5} ürün daha...</p>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SEARCH & SORT */}
+                    <div className="p-4">
+                        <div className="relative mb-4">
+                            <input type="text" placeholder="Ürün veya tedarikçi ara..." value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 border-2 rounded-lg" />
+                            <div className="absolute left-4 top-1/2 transform -translate-y-1/2"><Search /></div>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
+                            {[['name', 'A-Z'], ['nameDesc', 'Z-A'], ['stock', 'Stok↑'], ['stockDesc', 'Stok↓'], ['lowStock', 'Düşük Önce']].map(([val, lbl]) => (
+                                <button key={val} onClick={() => setSortBy(val)}
+                                    className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap ${sortBy === val ? 'bg-amber-600 text-white' : 'bg-white'}`}>
+                                    {lbl}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                            <button onClick={() => setSelectedCategory(null)}
+                                className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${selectedCategory === null ? 'bg-amber-600 text-white' : 'bg-white'}`}>
+                                Tümü ({products.length})
+                            </button>
+                            {categories.map(cat => {
+                                const cnt = products.filter(p => p.categoryId === cat.id).length;
+                                return (
+                                    <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
+                                        className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${selectedCategory === cat.id ? 'bg-amber-600 text-white' : 'bg-white'}`}>
+                                        {cat.icon} {cat.name} ({cnt})
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
+                    {/* PRODUCTS */}
                     <div className="px-4 space-y-3">
-                        {sortedProducts.map(product => {
-                            const isLowStock = product.current <= product.minStock;
-                            const isOrdered = product.orderStatus === 'ordered';
-                            
+                        {sorted.map(p => {
+                            const isLow = p.current <= p.minStock;
+                            const isOrdered = p.orderStatus === 'ordered';
                             return (
-                                <div key={product.id} className={`rounded-xl shadow-md p-4 ${darkMode ? 'bg-gray-800' : 'bg-white'} ${isLowStock ? 'border-l-4 border-red-500' : ''}`}>
+                                <div key={p.id} className={`bg-white rounded-xl shadow-md p-4 ${isLow ? 'border-l-4 border-red-500' : ''}`}>
                                     <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                                                {product.name}
-                                                {isLowStock && <span className="ml-2 bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">DÜŞÜK</span>}
-                                                {isOrdered && <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">✓ Sipariş Verildi</span>}
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-gray-800 flex items-center gap-2 flex-wrap">
+                                                {p.name}
+                                                {isLow && <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">DÜŞÜK</span>}
+                                                {isOrdered && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">✓ Sipariş Verildi</span>}
                                             </h3>
-                                            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                                Min. Stok: {product.minStock} {product.unit}
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {categories.find(c => c.id === p.categoryId)?.icon} {categories.find(c => c.id === p.categoryId)?.name}
+                                                {p.supplier && ` • ${p.supplier}`} • Min: {p.minStock} {p.unit}
                                             </p>
                                         </div>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => setEditingProduct(p)} className="text-blue-600 p-1"><Edit2 /></button>
+                                            <button onClick={() => deleteProduct(p.id)} className="text-red-600 p-1"><Trash2 /></button>
+                                        </div>
                                     </div>
-
                                     <div className="flex gap-2 mb-3">
-                                        <button onClick={() => quickUpdateStock(product.id, -5)} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>-5</button>
-                                        <button onClick={() => quickUpdateStock(product.id, -1)} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>-1</button>
-                                        <button onClick={() => quickUpdateStock(product.id, 1)} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${darkMode ? 'bg-green-700 text-white' : 'bg-green-100 text-green-700'}`}>+1</button>
-                                        <button onClick={() => quickUpdateStock(product.id, 5)} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${darkMode ? 'bg-green-700 text-white' : 'bg-green-100 text-green-700'}`}>+5</button>
-                                        <button onClick={() => quickUpdateStock(product.id, 10)} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${darkMode ? 'bg-green-700 text-white' : 'bg-green-100 text-green-700'}`}>+10</button>
+                                        {[-5, -1, 1, 5, 10].map(delta => (
+                                            <button key={delta} onClick={() => quickUpdate(p.id, delta)}
+                                                className={`flex-1 py-2 rounded-lg text-sm font-semibold ${delta < 0 ? 'bg-gray-200' : 'bg-green-100 text-green-700'}`}>
+                                                {delta > 0 ? '+' : ''}{delta}
+                                            </button>
+                                        ))}
                                     </div>
-
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className={`text-xs mb-1 block font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Mevcut Stok</label>
+                                            <label className="text-xs mb-1 block font-semibold text-gray-600">Mevcut Stok</label>
                                             <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    value={product.current}
-                                                    onChange={(e) => updateProduct(product.id, 'current', parseFloat(e.target.value) || 0)}
-                                                    className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
-                                                    step="0.1"
-                                                />
-                                                <span className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{product.unit}</span>
+                                                <input type="number" value={p.current} onChange={(e) => updateProduct(p.id, 'current', parseFloat(e.target.value) || 0)}
+                                                    className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${isLow ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} step="0.1" />
+                                                <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">{p.unit}</span>
                                             </div>
                                         </div>
-                                        
                                         <div>
                                             <label className="text-xs mb-1 block font-semibold text-orange-600">Sipariş Ver</label>
                                             <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    value={product.orderQty}
-                                                    onChange={(e) => updateProduct(product.id, 'orderQty', parseFloat(e.target.value) || 0)}
-                                                    className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${darkMode ? 'bg-orange-900/20 border-orange-700 text-white' : 'bg-orange-50 border-orange-300'}`}
-                                                    step="0.1"
-                                                />
-                                                <span className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{product.unit}</span>
+                                                <input type="number" value={p.orderQty} onChange={(e) => updateProduct(p.id, 'orderQty', parseFloat(e.target.value) || 0)}
+                                                    className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300" step="0.1" />
+                                                <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">{p.unit}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -337,22 +719,24 @@
                         })}
                     </div>
 
-                    {totalOrderItems > 0 && (
-                        <div className="fixed bottom-6 right-6 z-50">
-                            <button
-                                onClick={exportOrderList}
-                                className="bg-green-600 text-white p-4 rounded-full shadow-2xl flex items-center gap-2"
-                            >
-                                🛒
-                                <span className="bg-white text-green-600 px-2 py-1 rounded-full text-sm font-bold">{totalOrderItems}</span>
+                    {/* FLOATING BUTTONS */}
+                    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-end">
+                        {orderCount > 0 && (
+                            <button onClick={() => setShowOrderConfirm(true)}
+                                className="bg-green-600 text-white p-4 rounded-full shadow-2xl flex items-center gap-2">
+                                <ShoppingCart />
+                                <span className="bg-white text-green-600 px-2 py-1 rounded-full text-sm font-bold">{orderCount}</span>
                             </button>
-                        </div>
-                    )}
+                        )}
+                        <button onClick={() => setShowAddProduct(true)} className="bg-amber-600 text-white p-5 rounded-full shadow-2xl">
+                            <Plus />
+                        </button>
+                    </div>
                 </div>
             );
         };
 
-        ReactDOM.render(<CoffeeInventory />, document.getElementById('root'));
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
