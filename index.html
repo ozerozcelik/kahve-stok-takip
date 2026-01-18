@@ -68,6 +68,7 @@
             const [showNamePrompt, setShowNamePrompt] = useState(true);
             const [isLoading, setIsLoading] = useState(true);
             const [sortBy, setSortBy] = useState('name');
+            const [editingValues, setEditingValues] = useState({});
 
             useEffect(() => { loadData(); }, []);
 
@@ -302,7 +303,7 @@
                         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full">
                             <div className="text-center mb-6">
                                {/* BURAYA LOGO EKLEYIN */}
-                                <img src="https://i.ibb.co/JjWMjQrK/Ads-z-tasar-m-15.png" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
+                                <img src="https://i.ibb.co/g28xPbF/seffaf-arka-plan.png" alt="Logo" className="w-24 h-24 mx-auto mb-4 object-contain" />
                                 {/* veya metin logo: */}
                                 <div className="text-4xl font-bold text-[#7bb2b4] mb-2">Luma Coffee Co.</div>
                                 <h1 className="text-2xl font-bold text-[#7bb2b4]">Stok Yönetimi</h1>
@@ -700,16 +701,32 @@
                                         <div>
                                             <label className="text-xs mb-1 block font-semibold text-gray-600">Mevcut Stok</label>
                                             <div className="flex items-center gap-2">
-                                                <input type="number" value={p.current} onBlur={(e) => updateProduct(p.id, 'current', parseFloat(e.target.value) || 0)}
-                                                    className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${isLow ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} step="0.1" />
+                                               <input type="number" 
+    value={editingValues[`${p.id}-current`] !== undefined ? editingValues[`${p.id}-current`] : p.current}
+    onChange={(e) => setEditingValues({...editingValues, [`${p.id}-current`]: e.target.value})}
+    onBlur={(e) => {
+        updateProduct(p.id, 'current', parseFloat(e.target.value) || 0);
+        const newVals = {...editingValues};
+        delete newVals[`${p.id}-current`];
+        setEditingValues(newVals);
+    }}
+    className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${isLow ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} step="0.1" />
                                                 <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">{p.unit}</span>
                                             </div>
                                         </div>
                                         <div>
                                             <label className="text-xs mb-1 block font-semibold text-orange-600">Sipariş Ver</label>
                                             <div className="flex items-center gap-2">
-                                                <input type="number" value={p.orderQty} onBlur={(e) => updateProduct(p.id, 'orderQty', parseFloat(e.target.value) || 0)}
-                                                    className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300" step="0.1" />
+                                               <input type="number" 
+    value={editingValues[`${p.id}-order`] !== undefined ? editingValues[`${p.id}-order`] : p.orderQty}
+    onChange={(e) => setEditingValues({...editingValues, [`${p.id}-order`]: e.target.value})}
+    onBlur={(e) => {
+        updateProduct(p.id, 'orderQty', parseFloat(e.target.value) || 0);
+        const newVals = {...editingValues};
+        delete newVals[`${p.id}-order`];
+        setEditingValues(newVals);
+    }}
+    className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300" step="0.1" />
                                                 <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">{p.unit}</span>
                                             </div>
                                         </div>
