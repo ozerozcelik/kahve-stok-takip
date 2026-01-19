@@ -69,6 +69,9 @@
         const [isLoading, setIsLoading] = useState(true);
         const [sortBy, setSortBy] = useState('name');
         const [editingValues, setEditingValues] = useState({});
+        const [isUpdating, setIsUpdating] = useState(false);
+        const [quickUpdateTimers, setQuickUpdateTimers] = useState({});
+
 
         useEffect(() => { loadData(); }, []);
 
@@ -147,7 +150,8 @@
             notify('✓ Tedarikçi eklendi');
         };
 
-        const updateProduct = async (id, field, value) => {
+      const updateProduct = async (id, field, value) => {
+    setIsUpdating(true);
             if (supabase) {
                 const dbField = field === 'orderQty' ? 'order_qty' : field === 'minStock' ? 'min_stock' :
                                field === 'categoryId' ? 'category_id' : field === 'orderStatus' ? 'order_status' : field;
@@ -159,9 +163,10 @@
                     if (field === 'orderQty' && parseFloat(value) > 0 && p.orderStatus === 'ordered') upd.orderStatus = '';
                     return upd;
                 }
-                return p;
-            }));
-        };
+                     return p;
+        }));
+        setIsUpdating(false);
+    };
 
         const saveEditedProduct = async () => {
             if (!editingProduct.name.trim()) return notify(' Ürün adı boş olamaz', 'error');
@@ -213,9 +218,19 @@
         };
 
         const quickUpdate = (id, delta) => {
-            const p = products.find(x => x.id === id);
-            if (p) updateProduct(id, 'current', Math.max(0, (parseFloat(p.current) || 0) + delta));
-        };
+    setProducts(prev => prev.map(p => 
+        p.id === id ? { ...p, current: Math.max(0, (parseFloat(p.current) || 0) + delta) } : p
+    ));
+    
+    if (quickUpdateTimers[id]) clearTimeout(quickUpdateTimers[id]);
+    
+    const timer = setTimeout(() => {
+        const p = products.find(x => x.id === id);
+        if (p) updateProduct(id, 'current', Math.max(0, (parseFloat(p.current) || 0) + delta));
+    }, 500);
+    
+    setQuickUpdateTimers(prev => ({...prev, [id]: timer}));
+};
 
         const exportOrder = async () => {
             const items = products.filter(p => p.orderQty > 0);
@@ -339,9 +354,34 @@
 
         return (
             <div className="min-h-screen bg-gray-50 pb-24">
+                   {isUpdating && (
+            <div className="fixed inset-0 bg-black/10 z-50 flex items-center justify-center pointer-events-none">
+                <div className="bg-white rounded-full p-3 shadow-lg">
+                    <svg className="spinner" width="24" height="24" fill="none" stroke="#7bb2b4" strokeWidth="2">
+                        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                    </svg>
+                </div>
+            </div>
+        )}
                 <div className="bg-gradient-to-r from-[#7bb2b4] to-[#5a9294] text-white p-4 shadow-lg sticky top-0 z-40">
-                    <div className="flex items-center justify-between">
-                        <div><h1 className="text-xl font-bold"> Stok Yönetimi</h1><p className="text-sm opacity-80">{userName}</p></div>
+                   <div className="flex items-center justify-between">
+    <div>
+        <h1 className="text-xl font-bold">☕ Stok Yönetimi</h1>
+        <div className="flex items-center gap-2">
+            <p className="text-sm opacity-80">{userName}</p>
+            <button 
+                onClick={() => {
+                    if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+                        setUserName('');
+                        setShowNamePrompt(true);
+                    }
+                }}
+                className="text-xs bg-white/20 px-2 py-1 rounded hover:bg-white/30"
+            >
+                Çıkış
+            </button>
+        </div>
+    </div>
                         <div className="flex gap-2">
                             {supabase && <button onClick={loadData} className="p-2 hover:bg-white/20 rounded-lg" title="Yenile"><RefreshCw /></button>}
                             <button onClick={() => setShowHistory(true)} className="p-2 hover:bg-white/20 rounded-lg relative">
@@ -370,6 +410,9 @@
                             
                             <div className="mb-6">
                                 <h4 className="font-semibold mb-3 text-gray-700"> Kategoriler</h4>
+                                {categories.length === 0 && (
+    <p className="text-sm text-gray-500 mb-2 italic">Henüz kategori yok</p>
+)}
                                 {categories.map(cat => (
                                     <div key={cat.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded mb-1">
                                         <span>{cat.icon} {cat.name}</span>
@@ -703,12 +746,17 @@
                                         <div className="flex items-center gap-2">
                                            <input type="number" 
 value={editingValues[`${p.id}-current`] !== undefined ? editingValues[`${p.id}-current`] : p.current}
-onChange={(e) => setEditingValues({...editingValues, [`${p.id}-current`]: e.target.value})}
+onChange={(e) => {
+    const val = e.target.value;
+    if (val !== '' && parseFloat(val) < 0) return;
+    setEditingValues({...editingValues, [`${p.id}-current`]: val});
+}}
 onBlur={(e) => {
     updateProduct(p.id, 'current', parseFloat(e.target.value) || 0);
-    const newVals = {...editingValues};
-    delete newVals[`${p.id}-current`];
-    setEditingValues(newVals);
+    setEditingValues(prev => {
+        const {[`${p.id}-current`]: removed, ...rest} = prev;
+        return rest;
+    });
 }}
 className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${isLow ? 'border-red-300 bg-red-50' : 'border-gray-300'}`} step="0.1" />
                                             <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">{p.unit}</span>
@@ -719,12 +767,17 @@ className={`w-full px-3 py-2 border-2 rounded-lg font-bold text-lg ${isLow ? 'bo
                                         <div className="flex items-center gap-2">
                                            <input type="number" 
 value={editingValues[`${p.id}-order`] !== undefined ? editingValues[`${p.id}-order`] : p.orderQty}
-onChange={(e) => setEditingValues({...editingValues, [`${p.id}-order`]: e.target.value})}
+onChange={(e) => {
+    const val = e.target.value;
+    if (val !== '' && parseFloat(val) < 0) return;
+    setEditingValues({...editingValues, [`${p.id}-order`]: val});
+}}
 onBlur={(e) => {
     updateProduct(p.id, 'orderQty', parseFloat(e.target.value) || 0);
-    const newVals = {...editingValues};
-    delete newVals[`${p.id}-order`];
-    setEditingValues(newVals);
+    setEditingValues(prev => {
+        const {[`${p.id}-order`]: removed, ...rest} = prev;
+        return rest;
+    });
 }}
 className="w-full px-3 py-2 border-2 rounded-lg font-bold text-lg bg-orange-50 border-orange-300" step="0.1" />
                                             <span className="text-sm font-semibold text-gray-600 whitespace-nowrap">{p.unit}</span>
